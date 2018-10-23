@@ -9,8 +9,8 @@
 #include <cstring>
 #include <map>
 #include <optional>
+#include <algorithm>
 
-#pragma region Constants
 const int WIDTH = 800;
 const int HEIGHT = 600;
 const std::vector<const char*> validationLayers = {
@@ -19,9 +19,7 @@ const std::vector<const char*> validationLayers = {
 const std::vector <const char*> deviceExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
-#pragma endregion
 
-#pragma region Debug Stuff
 #ifdef NDEBUG
 	const bool enableValidationLayers = false;
 #else
@@ -47,7 +45,6 @@ void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT
 	}
 }
 
-#pragma endregion
 
 struct QueueFamilyIndices {
 	std::optional<uint32_t> graphicsFamily;
@@ -75,7 +72,6 @@ public:
 
 private:
 
-	# pragma region Setup
 	void initWindow() {
 		// Initialize GLFW
 		glfwInit();
@@ -95,11 +91,10 @@ private:
 		createSurface();
 		pickPhysicalDevice();
 		createLogicalDevice();
+		createSwapChain();
 	}
 
-	# pragma region initVulkan Helpers
-
-	# pragma region createInstance
+	
 	void createInstance() {
 		// Check validation layer support if requested
 		if (enableValidationLayers && !checkValidationLayerSupport()) {
@@ -220,9 +215,7 @@ private:
 		return extensions;
 	}
 
-	# pragma endregion
-
-	#pragma region setupDebugCallback
+	
 	void setupDebugCallback() {
 		if (!enableValidationLayers) return;
 
@@ -236,8 +229,7 @@ private:
 		}
 	}
 
-	#pragma region debugCallback
-
+	
 	// Callback for debbugging through validation layers
 	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 		VkDebugReportFlagsEXT flags,
@@ -254,9 +246,7 @@ private:
 		return VK_FALSE;
 	}
 
-	#pragma endregion (the actual callback)
-	#pragma endregion
-
+		
 	// Creates Window using GLFW
 	void createSurface() {
 		if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
@@ -264,8 +254,7 @@ private:
 		}
 	}
 
-	#pragma region Device selection and configuration
-	// Choose physical device
+		// Choose physical device
 	void pickPhysicalDevice() {
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -274,10 +263,10 @@ private:
 		}
 
 		std::vector<VkPhysicalDevice> devices(deviceCount);
-		vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data()); \
+		vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
-			// Use an ordered map to automatically sort candidates by increasing score
-			std::multimap<int, VkPhysicalDevice> candidates;
+		// Use an ordered map to automatically sort candidates by increasing score
+		std::multimap<int, VkPhysicalDevice> candidates;
 
 		for (const auto& device : devices) {
 			int score = rateDeviceSuitability(device);
@@ -444,21 +433,117 @@ private:
 			vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
 		}
 
+		uint32_t presentModeCount;
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+		if (presentModeCount != 0) {
+			details.presentModes.resize(presentModeCount);
+			vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
+		}
+
 		return details;
 	}
 
-	# pragma endregion
+	void createSwapChain() {
+		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
+		VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
+		VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
+		VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 
-	# pragma endregion
-	# pragma endregion
+		uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+		if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
+			imageCount = swapChainSupport.capabilities.maxImageCount;
+		}
+		VkSwapchainCreateInfoKHR createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+		createInfo.surface = surface;
 
+		createInfo.minImageCount = imageCount;
+		createInfo.imageFormat = surfaceFormat.format;
+		createInfo.imageColorSpace = surfaceFormat.colorSpace;
+		createInfo.imageExtent = extent;
+		createInfo.imageArrayLayers = 1;
+		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+		QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+		uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+
+		if (indices.graphicsFamily != indices.presentFamily) {
+			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+			createInfo.queueFamilyIndexCount = 2;
+			createInfo.pQueueFamilyIndices = queueFamilyIndices;
+		} else {
+			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			createInfo.queueFamilyIndexCount = 0;
+			createInfo.pQueueFamilyIndices = nullptr;
+		}
+
+		createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+		createInfo.presentMode = presentMode;
+		createInfo.clipped = VK_TRUE;
+		createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+		if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create swap chain!");
+		}
+	}
+	
+	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
+		
+		// If we can choose any one we want, pick the ones we want
+		if (availableFormats.size() == 1 && availableFormats[0].format == VK_FORMAT_UNDEFINED) {
+			return {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+		}
+
+		// Otherwise, check if the ones we want are available, and if so, pick them
+		for (const auto& availableFormat : availableFormats) {
+			if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+				return availableFormat;
+			}
+		}
+
+		// Settle for the first one available
+		return availableFormats[0];
+	}
+
+	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> availablePresentModes) {
+		
+		// By default, settle for FIFO, which is guaranteed to be available
+		VkPresentModeKHR bestMode = VK_PRESENT_MODE_FIFO_KHR;
+
+		//Check if Mailbox is available
+		for (const auto& availablePresentMode : availablePresentModes) {
+			if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+				return availablePresentMode;
+			} else if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+				bestMode = availablePresentMode;
+			}
+		}
+
+		return bestMode;
+	}
+
+	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
+		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+			return capabilities.currentExtent;
+		} else {
+			VkExtent2D actualExtent = {WIDTH, HEIGHT};
+
+			actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
+			actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
+
+			return actualExtent;
+
+		}
+	}
+	
+		
 	void mainLoop() {
 		while (!glfwWindowShouldClose(window)) {
 			glfwPollEvents();
 		}
 	}
 
-	#pragma region Cleanup
 	void cleanup() {
 		if (enableValidationLayers) {
 			DestroyDebugReportCallbackEXT(instance, callback, nullptr);
@@ -469,9 +554,7 @@ private:
 		glfwDestroyWindow(window);
 		glfwTerminate();
 	}
-	#pragma endregion
-
-	# pragma region Private class members
+	
 	// GLFW window
 	GLFWwindow* window;
 
@@ -487,17 +570,19 @@ private:
 	// Screen surface
 	VkSurfaceKHR surface;
 
-	// Reference to the graphics queue
+	// Graphics queue
 	VkQueue graphicsQueue;
 
 	// Presentation queue
 	VkQueue presentQueue;
 
-	// Reference to debug report callback
+	// Swapchain
+	VkSwapchainKHR swapChain;
+
+	// Debug report callback
 	VkDebugReportCallbackEXT callback;
 
-	# pragma endregion
-};
+	};
 
 int main() {
 	HelloTriangleApplication app;
