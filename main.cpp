@@ -548,6 +548,7 @@ private:
 		if (enableValidationLayers) {
 			DestroyDebugReportCallbackEXT(instance, callback, nullptr);
 		}
+		vkDestroySwapchainKHR(device, swapChain, nullptr);
 		vkDestroySurfaceKHR(instance, surface, nullptr);
 		vkDestroyInstance(instance, nullptr);
 		vkDestroyDevice(device, nullptr);
