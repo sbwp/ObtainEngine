@@ -13,6 +13,7 @@
 #include <fstream>
 #include "queuefamilyindices.h"
 #include "swapchainsupportdetails.h"
+#include "vertex.h"
 
 class VulkanRenderer {
 public:
@@ -25,6 +26,9 @@ private:
 
 	// Vulkan Instance
 	VkInstance instance;
+
+	// Debug report callback
+	VkDebugReportCallbackEXT callback;
 
 	// Physical device
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
@@ -55,9 +59,37 @@ private:
 
 	// Swapchain image views
 	std::vector<VkImageView> swapChainImageViews;
+	
+	// Render pass
+	VkRenderPass renderPass;
 
-	// Debug report callback
-	VkDebugReportCallbackEXT callback;
+	// Pipeline layout
+	VkPipelineLayout pipelineLayout;
+
+	// Pipeline
+	VkPipeline graphicsPipeline;
+
+	// Framebuffers
+	std::vector<VkFramebuffer> swapChainFramebuffers;
+
+	// Command pool
+	VkCommandPool commandPool;
+
+	// Command buffers
+	std::vector<VkCommandBuffer> commandBuffers;
+
+	// Semaphores for synchronizing queue operations
+	std::vector<VkSemaphore> imageAvailableSemaphores;
+	std::vector<VkSemaphore> renderFinishedSemaphores;
+
+	// Fences for limiting frames written to at once
+	std::vector<VkFence> inFlightFences;
+
+	// Index of current frame for tracking semaphore to use
+	size_t currentFrame = 0;
+
+	// Flag for whether to resize frame buffer
+	bool framebufferResized = false;
 
 	void initWindow();
 
@@ -71,9 +103,7 @@ private:
 	// Gets required extensions
 	std::vector<const char*> getRequiredExtensions();
 
-	
 	void setupDebugCallback();
-
 	
 	// Callback for debbugging through validation layers
 	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
@@ -84,14 +114,12 @@ private:
 		int32_t code,
 		const char* layerPrefix,
 		const char* msg,
-		void* userData) {
+		void* userData
+	);
 
-		std::cerr << "validation layer: " << msg << std::endl;
-
-		return VK_FALSE;
-	}
-
-		
+	// Callback for handling window resizes
+	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+	
 	// Creates Window using GLFW
 	void createSurface();
 
@@ -113,6 +141,10 @@ private:
 	SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
 
 	void createSwapChain();
+
+	void recreateSwapChain();
+
+	void cleanupSwapChain();
 	
 	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 
@@ -121,12 +153,24 @@ private:
 	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
 	void createImageViews();
+
+	void createRenderPass();
 	
 	void createGraphicsPipeline();
 
 	VkShaderModule createShaderModule(const std::vector<char>& code);
+
+	void createFramebuffers();
+
+	void createCommandPool();
+
+	void createCommandBuffers();
+
+	void createSyncObjects();
 	
 	void mainLoop();
+
+	void drawFrame();
 
 	void cleanup();
 

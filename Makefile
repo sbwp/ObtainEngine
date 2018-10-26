@@ -1,6 +1,6 @@
 VULKAN_SDK_PATH = /home/sabrina/vulkansdk/x86_64
 CFLAGS = -std=c++17 -I$(VULKAN_SDK_PATH)/include
-LDFLAGS = -L$(VULKAN_SDK_PATH)/lib `pkg-config --static --libs glfw3` -lvulkan
+LDFLAGS = -g -L$(VULKAN_SDK_PATH)/lib `pkg-config --static --libs glfw3` -lvulkan
 SRC = $(wildcard src/*.cpp) \
 	  $(wildcard src/renderer/*.cpp)
 OBJ = $(addprefix intermediate/,$(SRC:.cpp=.o))
@@ -26,8 +26,8 @@ shaders: $(SPV)
 rebuild: clean build/game
 
 test: rebuild
-	LD_LIBRARY_PATH=$(VULKAN_SDK_PATH)/lib VK_LAYER_PATH=$(VULKAN_SDK_PATH)/etc/explicit_layer.d build/game
-
+	LD_LIBRARY_PATH=$(VULKAN_SDK_PATH)/lib VK_LAYER_PATH=$(VULKAN_SDK_PATH)/etc/explicit_layer.d ./run.sh
+	
 clean:
 	rm -rf build/*
 	rm -rf intermediate/*
