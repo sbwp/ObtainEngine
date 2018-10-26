@@ -1059,9 +1059,11 @@ void VulkanRenderer::createSyncObjects() {
 void VulkanRenderer::mainLoop() {
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
+
 		clock_t newTime = clock();
 		double deltaTime = (newTime - gameTime) / (double) CLOCKS_PER_SEC;
 		gameTime = newTime;
+
 		tick(deltaTime);
 		drawFrame();
 	}
@@ -1070,33 +1072,33 @@ void VulkanRenderer::mainLoop() {
 }
 
 void VulkanRenderer::tick(double deltaTime) {
-	double gTime = gameTime / (double) CLOCKS_PER_SEC;
+	// double gTime = gameTime / (double) CLOCKS_PER_SEC;
 
-	vertices[0].pos.x = (float) (sin(gTime) / 2.0);
+	// vertices[0].pos.x = (float) (sin(gTime) / 2.0);
 
-	vertices[1].pos.x = (float) (abs(sin(gTime * 1.2)));
+	// vertices[1].pos.x = (float) (abs(sin(gTime * 1.2)));
 
-	vertices[2].pos.x = (float) ((sin(gTime * 1.3) / 4.0) - 0.75);
+	// vertices[2].pos.x = (float) ((sin(gTime * 1.3) / 4.0) - 0.75);
 
-	Vertex r = {{0.0f, -0.5f},{0.0f, 0.0f, 0.0f}};
-	Vertex g = {{1.0f, 0.5f},{0.0f, 0.0f, 0.0f}};
-	Vertex b = {{-1.0f, 0.5f},{0.0f, 0.0f, 0.0f}};
+	// Vertex r = {{0.0f, -0.5f},{0.0f, 0.0f, 0.0f}};
+	// Vertex g = {{1.0f, 0.5f},{0.0f, 0.0f, 0.0f}};
+	// Vertex b = {{-1.0f, 0.5f},{0.0f, 0.0f, 0.0f}};
 
-	float maxDist = 1.802775638f;
+	// float maxDist = 1.802775638f;
 
-	vertices[0].color.r = 1.0f - fclamp(vertices[0].distance(r) / maxDist, 0.0f, 1.0f);
-	vertices[0].color.g = 1.0f - fclamp(vertices[0].distance(g) / maxDist, 0.0f, 1.0f);
-	vertices[0].color.b = 1.0f - fclamp(vertices[0].distance(b) / maxDist, 0.0f, 1.0f);
+	// vertices[0].color.r = 1.0f - fclamp(vertices[0].distance(r) / maxDist, 0.0f, 1.0f);
+	// vertices[0].color.g = 1.0f - fclamp(vertices[0].distance(g) / maxDist, 0.0f, 1.0f);
+	// vertices[0].color.b = 1.0f - fclamp(vertices[0].distance(b) / maxDist, 0.0f, 1.0f);
 
-	vertices[1].color.r = 1.0f - fclamp(vertices[1].distance(r) / maxDist, 0.0f, 1.0f);
-	vertices[1].color.g = 1.0f - fclamp(vertices[1].distance(g) / maxDist, 0.0f, 1.0f);
-	vertices[1].color.b = 1.0f - fclamp(vertices[1].distance(b) / maxDist, 0.0f, 1.0f);
+	// vertices[1].color.r = 1.0f - fclamp(vertices[1].distance(r) / maxDist, 0.0f, 1.0f);
+	// vertices[1].color.g = 1.0f - fclamp(vertices[1].distance(g) / maxDist, 0.0f, 1.0f);
+	// vertices[1].color.b = 1.0f - fclamp(vertices[1].distance(b) / maxDist, 0.0f, 1.0f);
 
-	vertices[2].color.r = 1.0f - fclamp(vertices[2].distance(r) / maxDist, 0.0f, 1.0f);
-	vertices[2].color.g = 1.0f - fclamp(vertices[2].distance(g) / maxDist, 0.0f, 1.0f);
-	vertices[2].color.b = 1.0f - fclamp(vertices[2].distance(b) / maxDist, 0.0f, 1.0f);
+	// vertices[2].color.r = 1.0f - fclamp(vertices[2].distance(r) / maxDist, 0.0f, 1.0f);
+	// vertices[2].color.g = 1.0f - fclamp(vertices[2].distance(g) / maxDist, 0.0f, 1.0f);
+	// vertices[2].color.b = 1.0f - fclamp(vertices[2].distance(b) / maxDist, 0.0f, 1.0f);
 
-	updateVertices();
+	// updateVertices();
 }
 
 float VulkanRenderer::fclamp (float value, float min, float max) {
