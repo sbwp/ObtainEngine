@@ -11,6 +11,7 @@
 #include <optional>
 #include <algorithm>
 #include <fstream>
+#include <ctime>
 #include "queuefamilyindices.h"
 #include "swapchainsupportdetails.h"
 #include "vertex.h"
@@ -84,6 +85,18 @@ private:
 
 	// Fences for limiting frames written to at once
 	std::vector<VkFence> inFlightFences;
+
+	// Vertex buffer
+	VkBuffer vertexBuffer;
+
+	// Vertex buffer memory
+	VkDeviceMemory vertexBufferMemory;
+
+	// Triangle vertices
+	std::vector<Vertex> vertices;
+
+	// Previous time
+	clock_t gameTime;
 
 	// Index of current frame for tracking semaphore to use
 	size_t currentFrame = 0;
@@ -164,11 +177,17 @@ private:
 
 	void createCommandPool();
 
+	void createVertexBuffer();
+
+	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
 	void createCommandBuffers();
 
 	void createSyncObjects();
 	
 	void mainLoop();
+
+	void tick(double deltaTime);
 
 	void drawFrame();
 

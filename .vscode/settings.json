@@ -37,6 +37,8 @@
 		"typeinfo": "cpp",
 		"utility": "cpp",
 		"deque": "cpp",
-		"*.h": "cpp"
+		"*.h": "cpp",
+		"cstddef": "cpp",
+		"ctime": "cpp"
 	}
 }
