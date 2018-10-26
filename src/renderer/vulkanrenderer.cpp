@@ -70,7 +70,7 @@ void VulkanRenderer::run() {
 
 	gameTime = clock();
 	mainLoop();
-	
+
 	cleanup();
 }
 
@@ -869,38 +869,105 @@ void VulkanRenderer::createCommandPool() {
 	}
 }
 
-void VulkanRenderer::createVertexBuffer() {
+void VulkanRenderer::createBuffer(
+	VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
+	VkBuffer& buffer, VkDeviceMemory& bufferMemory
+) {
 	VkBufferCreateInfo bufferInfo = {};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferInfo.size = sizeof(vertices[0]) * vertices.size();
-	bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	bufferInfo.size = size;
+	bufferInfo.usage = usage;
 	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	if (vkCreateBuffer(device, &bufferInfo, nullptr, &vertexBuffer) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create vertex buffer!");
+	if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create buffer!");
 	}
 
 	VkMemoryRequirements memRequirements;
-	vkGetBufferMemoryRequirements(device, vertexBuffer, &memRequirements);
+	vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
 
 	VkMemoryAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = findMemoryType(
-		memRequirements.memoryTypeBits,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-	);
+	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
 
-	if (vkAllocateMemory(device, &allocInfo, nullptr, &vertexBufferMemory) != VK_SUCCESS) {
-		throw std::runtime_error("failed to allocate vertex buffer memory!");
+	if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
+		throw std::runtime_error("failed to allocate buffer memory!");
 	}
 
-	vkBindBufferMemory(device, vertexBuffer, vertexBufferMemory, 0);
+	vkBindBufferMemory(device, buffer, bufferMemory, 0);
+}
+
+void VulkanRenderer::createVertexBuffer() {
+	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+
+	createBuffer(
+		bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		vertexBuffer, vertexBufferMemory
+	);
+
+	updateVertices();
+}
+
+void VulkanRenderer::updateVertices() {
+	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+
+	createBuffer(
+		bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingBuffer, stagingBufferMemory
+	);
 
 	void* data;
-	vkMapMemory(device, vertexBufferMemory, 0, bufferInfo.size, 0, &data);
-	memcpy(data, vertices.data(), (size_t) bufferInfo.size);
-	vkUnmapMemory(device, vertexBufferMemory);
+	vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, vertices.data(), (size_t) bufferSize);
+	vkUnmapMemory(device, stagingBufferMemory);
+
+	copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+	vkDestroyBuffer(device, stagingBuffer, nullptr);
+	vkFreeMemory(device, stagingBufferMemory, nullptr);
+}
+
+
+void VulkanRenderer::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+	VkCommandBufferAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandPool = commandPool;
+	allocInfo.commandBufferCount = 1;
+
+	// TODO: Create separate command pool for transient command buffers
+	// like these with VK_COMMAND_POOL_CREATE_TRANSIENT_BIT flag
+	VkCommandBuffer commandBuffer;
+	vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+
+	VkCommandBufferBeginInfo beginInfo = {};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+	VkBufferCopy copyRegion = {};
+	copyRegion.size = size;
+	vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+	vkEndCommandBuffer(commandBuffer);
+	
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffer;
+
+	vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+
+	// TODO: use a fence instead, and schedule multiple transfers to run in parallel
+	// (Not necessary for now when we only have one buffer to submit anyway)
+	vkQueueWaitIdle(graphicsQueue);
+
+	vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
 }
 
 uint32_t VulkanRenderer::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
@@ -1003,27 +1070,43 @@ void VulkanRenderer::mainLoop() {
 }
 
 void VulkanRenderer::tick(double deltaTime) {
-	vertices[0].pos.x = (float) (sin(gameTime) / 2.0);
+	double gTime = gameTime / (double) CLOCKS_PER_SEC;
 
-	vertices[1].pos.x = (float) (abs(sin(gameTime * 2.0)));
+	vertices[0].pos.x = (float) (sin(gTime) / 2.0);
 
-	vertices[2].pos.x = (float) ((sin(gameTime) / 2.0) - 0.75);
+	vertices[1].pos.x = (float) (abs(sin(gTime * 1.2)));
 
-	float comp1 = (float) (sin(gameTime * 7.0));
-	float comp2 = (float) (cos(gameTime * 3.0));
-	float comp3 = (float) (sin(gameTime * 5.0));
+	vertices[2].pos.x = (float) ((sin(gTime * 1.3) / 4.0) - 0.75);
 
-	vertices[0].color.r = comp1;
-	vertices[0].color.g = comp2;
-	vertices[0].color.b = comp3;
+	Vertex r = {{0.0f, -0.5f},{0.0f, 0.0f, 0.0f}};
+	Vertex g = {{1.0f, 0.5f},{0.0f, 0.0f, 0.0f}};
+	Vertex b = {{-1.0f, 0.5f},{0.0f, 0.0f, 0.0f}};
 
-	vertices[1].color.r = comp2;
-	vertices[1].color.g = comp3;
-	vertices[1].color.b = comp1;
+	float maxDist = 1.802775638f;
 
-	vertices[2].color.r = comp3;
-	vertices[2].color.g = comp1;
-	vertices[2].color.b = comp2;
+	vertices[0].color.r = 1.0f - fclamp(vertices[0].distance(r) / maxDist, 0.0f, 1.0f);
+	vertices[0].color.g = 1.0f - fclamp(vertices[0].distance(g) / maxDist, 0.0f, 1.0f);
+	vertices[0].color.b = 1.0f - fclamp(vertices[0].distance(b) / maxDist, 0.0f, 1.0f);
+
+	vertices[1].color.r = 1.0f - fclamp(vertices[1].distance(r) / maxDist, 0.0f, 1.0f);
+	vertices[1].color.g = 1.0f - fclamp(vertices[1].distance(g) / maxDist, 0.0f, 1.0f);
+	vertices[1].color.b = 1.0f - fclamp(vertices[1].distance(b) / maxDist, 0.0f, 1.0f);
+
+	vertices[2].color.r = 1.0f - fclamp(vertices[2].distance(r) / maxDist, 0.0f, 1.0f);
+	vertices[2].color.g = 1.0f - fclamp(vertices[2].distance(g) / maxDist, 0.0f, 1.0f);
+	vertices[2].color.b = 1.0f - fclamp(vertices[2].distance(b) / maxDist, 0.0f, 1.0f);
+
+	updateVertices();
+}
+
+float VulkanRenderer::fclamp (float value, float min, float max) {
+	if (value < min) {
+		return min;
+	} else if (value > max) {
+		return max;
+	} else {
+		return value;
+	}
 }
 
 void VulkanRenderer::drawFrame() {
