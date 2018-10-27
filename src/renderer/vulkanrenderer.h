@@ -86,14 +86,27 @@ private:
 	// Fences for limiting frames written to at once
 	std::vector<VkFence> inFlightFences;
 
+	// TODO: Use an offset to store them in the same VkBuffer to be more cache friendly
 	// Vertex buffer
 	VkBuffer vertexBuffer;
-
-	// Vertex buffer memory
 	VkDeviceMemory vertexBufferMemory;
 
-	// Triangle vertices
-	std::vector<Vertex> vertices;
+	// Index buffer
+	VkBuffer indexBuffer;
+	VkDeviceMemory indexBufferMemory;
+
+	// (Temporary) hard-coded vertices to draw
+	const std::vector<Vertex> vertices = {
+		{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+		{{ 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+		{{ 0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}},
+		{{-0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}}
+	};;
+
+	// (Temporary) hard-coded indices of vertices to draw
+	const std::vector<uint16_t> indices = {
+		0, 1, 2, 2, 3, 0
+	};
 
 	// Previous time
 	clock_t gameTime;
@@ -185,6 +198,10 @@ private:
 	void createVertexBuffer();
 	
 	void updateVertices();
+
+	void createIndexBuffer();
+	
+	void updateIndices();
 
 	static float fclamp (float value, float min, float max);
 
