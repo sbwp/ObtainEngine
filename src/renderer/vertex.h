@@ -41,7 +41,7 @@ struct Vertex {
 	float distance(Vertex v) {
 		float dx = pos.x - v.pos.x;
 		float dy = pos.y - v.pos.y;
-		//printf("pos: (%f,%f), v.pos: (%f,%f), sqdist: %f\n",pos.x,pos.y,v.pos.x,v.pos.y,dx*dx+dy*dy);
+		//printf("pos: (%f,%f), v.pos: (%f,%f), dist: %f\n",pos.x,pos.y,v.pos.x,v.pos.y,dx*dx+dy*dy);
 		return (float) sqrt(dx * dx + dy * dy);
 	}
 };
