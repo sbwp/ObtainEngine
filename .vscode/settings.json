@@ -39,6 +39,8 @@
 		"deque": "cpp",
 		"*.h": "cpp",
 		"cstddef": "cpp",
-		"ctime": "cpp"
+		"ctime": "cpp",
+		"chrono": "cpp",
+		"ratio": "cpp"
 	}
 }

@@ -1,5 +1,6 @@
 VULKAN_SDK_PATH = /home/sabrina/vulkansdk/x86_64
-CFLAGS = -std=c++17 -I$(VULKAN_SDK_PATH)/include
+STB_INCLUDE_PATH = /home/sabrina/libs/stb
+CFLAGS = -std=c++17 -I$(VULKAN_SDK_PATH)/include -I$(STB_INCLUDE_PATH)
 LDFLAGS = -g -L$(VULKAN_SDK_PATH)/lib `pkg-config --static --libs glfw3` -lvulkan
 SRC = $(wildcard src/*.cpp) \
 	  $(wildcard src/renderer/*.cpp)
@@ -8,6 +9,8 @@ SHADERS = $(wildcard src/renderer/shaders/shader.*)
 SPV = $(addprefix build/shaders/,$(addsuffix .spv,$(subst .,,$(suffix $(SHADERS)))))
 
 build/game: $(OBJ) $(SPV)
+	mkdir -p ./build/textures
+	cp -R ./src/renderer/textures/* ./build/textures/
 	g++ -o $@ $(OBJ) $(LDFLAGS)
 
 intermediate/%.o: %.cpp
@@ -19,7 +22,7 @@ build/shaders/%.spv: src/renderer/shaders/shader.%
 	$(VULKAN_SDK_PATH)/bin/glslangValidator -V src/renderer/shaders/shader.vert -o build/shaders/vert.spv
 	$(VULKAN_SDK_PATH)/bin/glslangValidator -V src/renderer/shaders/shader.frag -o build/shaders/frag.spv
 
-.PHONY: test clean rebuild shaders
+.PHONY: test clean rebuild shaders textures
 
 shaders: $(SPV)
 
