@@ -1,5 +1,17 @@
+#ifndef VULKAN_RENDERER_H
+#define VULKAN_RENDERER_H
+
+#ifndef GLFW_INCLUDE_VULKAN
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#endif // vulkan
+
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <chrono>
 #include <set>
 #include <iostream>
 #include <vector>
@@ -15,6 +27,7 @@
 #include "queuefamilyindices.h"
 #include "swapchainsupportdetails.h"
 #include "vertex.h"
+#include "uniformbufferobject.h"
 
 class VulkanRenderer {
 public:
@@ -64,6 +77,9 @@ private:
 	// Render pass
 	VkRenderPass renderPass;
 
+	// Descriptor set layout
+	VkDescriptorSetLayout descriptorSetLayout;
+
 	// Pipeline layout
 	VkPipelineLayout pipelineLayout;
 
@@ -78,6 +94,12 @@ private:
 
 	// Command buffers
 	std::vector<VkCommandBuffer> commandBuffers;
+
+	// Textures
+	VkImage textureImage;
+	VkDeviceMemory textureImageMemory;
+	VkImageView textureImageView;
+	VkSampler textureSampler;
 
 	// Semaphores for synchronizing queue operations
 	std::vector<VkSemaphore> imageAvailableSemaphores;
@@ -95,27 +117,45 @@ private:
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
 
+	// Uniform buffers
+	std::vector<VkBuffer> uniformBuffers;
+	std::vector<VkDeviceMemory> uniformBuffersMemory;
+
+	// Descriptor Pool
+	VkDescriptorPool descriptorPool;
+
+	// Descriptor Sets
+	std::vector<VkDescriptorSet> descriptorSets;
+
 	// (Temporary) hard-coded vertices to draw
 	const std::vector<Vertex> vertices = {
-		{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-		{{ 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-		{{ 0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}},
-		{{-0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}}
-	};;
+		{{-0.5f, -0.5f,  0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+		{{ 0.5f, -0.5f,  0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+		{{ 0.5f,  0.5f,  0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+		{{-0.5f,  0.5f,  0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+
+		{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+		{{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+		{{ 0.5f,  0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+		{{-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+	};
 
 	// (Temporary) hard-coded indices of vertices to draw
 	const std::vector<uint16_t> indices = {
-		0, 1, 2, 2, 3, 0
+		0, 1, 2, 2, 3, 0,
+		4, 5, 6, 6, 7, 4
 	};
-
-	// Previous time
-	clock_t gameTime;
 
 	// Index of current frame for tracking semaphore to use
 	size_t currentFrame = 0;
 
 	// Flag for whether to resize frame buffer
 	bool framebufferResized = false;
+	
+	// Depth
+	VkImage depthImage;
+	VkDeviceMemory depthImageMemory;
+	VkImageView depthImageView;
 
 	void initWindow();
 
@@ -181,6 +221,8 @@ private:
 	void createImageViews();
 
 	void createRenderPass();
+
+	void createDescriptorSetLayout();
 	
 	void createGraphicsPipeline();
 
@@ -194,6 +236,31 @@ private:
 		VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
 		VkBuffer& buffer, VkDeviceMemory& bufferMemory
 	);
+	
+	void createDepthResources();
+	
+	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+
+	void createTextureImage();
+
+	void createTextureImageView();
+	
+	void createTextureSampler();
+
+	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+
+	void createImage(
+		uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, 
+		VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory
+	);
+
+	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+
+	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+
+	VkCommandBuffer beginSingleTimeCommands();
+
+	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 
 	void createVertexBuffer();
 	
@@ -203,6 +270,13 @@ private:
 	
 	void updateIndices();
 
+	void createUniformBuffer();
+
+	void createDescriptorPool();
+
+	void createDescriptorSets();
+
+	// Clamps a float between min and max
 	static float fclamp (float value, float min, float max);
 
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
@@ -215,10 +289,12 @@ private:
 	
 	void mainLoop();
 
-	void tick(double deltaTime);
-
 	void drawFrame();
+
+	void updateUniformBuffer(uint32_t currentImage);
 
 	void cleanup();
 
 };
+
+#endif //VULKAN_RENDERER_H

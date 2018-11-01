@@ -1,3 +1,6 @@
+#ifndef QUEUE_FAMILY_INDICES_H
+#define QUEUE_FAMILY_INDICES_H
+
 #include <optional>
 
 struct QueueFamilyIndices {
@@ -8,3 +11,5 @@ struct QueueFamilyIndices {
 		return graphicsFamily.has_value() && presentFamily.has_value();
 	}
 };
+
+#endif // QUEUE_FAMILY_INDICES_H

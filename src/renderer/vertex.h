@@ -1,11 +1,15 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#ifndef VERTEX_H
+#define VERTEX_H
+
 #include <glm/glm.hpp>
 #include <array>
 
 struct Vertex {
-	glm::vec2 pos;
+	glm::vec3 pos;
 	glm::vec3 color;
+	glm::vec2 texCoord;
 
 	static VkVertexInputBindingDescription getBindingDescription() {
 		VkVertexInputBindingDescription bindingDescription = {};
@@ -15,12 +19,12 @@ struct Vertex {
 		return bindingDescription;
 	}
 
-	static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
-		std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions = {};
+	static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
+		std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions = {};
 
 		attributeDescriptions[0].binding = 0;
 		attributeDescriptions[0].location = 0;
-		attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
 		attributeDescriptions[0].offset = offsetof(Vertex, pos);
 
 		attributeDescriptions[1].binding = 0;
@@ -28,20 +32,21 @@ struct Vertex {
 		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
 		attributeDescriptions[1].offset = offsetof(Vertex, color);
 
+		attributeDescriptions[2].binding = 0;
+		attributeDescriptions[2].location = 2;
+		attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+		attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+
 		return attributeDescriptions;
 	}
-
-	float sqDistance(Vertex v) {
-		float dx = pos.x - v.pos.x;
-		float dy = pos.y - v.pos.y;
-		//printf("pos: (%f,%f), v.pos: (%f,%f), sqdist: %f\n",pos.x,pos.y,v.pos.x,v.pos.y,dx*dx+dy*dy);
-		return dx * dx + dy * dy;
-	}
-
+	
 	float distance(Vertex v) {
 		float dx = pos.x - v.pos.x;
 		float dy = pos.y - v.pos.y;
-		//printf("pos: (%f,%f), v.pos: (%f,%f), dist: %f\n",pos.x,pos.y,v.pos.x,v.pos.y,dx*dx+dy*dy);
-		return (float) sqrt(dx * dx + dy * dy);
+		float dz = pos.z - v.pos.z;
+		
+		return (float) sqrt(dx * dx + dy * dy + dz * dz);
 	}
 };
+
+#endif // VERTEX_H
