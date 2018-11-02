@@ -1,6 +1,7 @@
-VULKAN_SDK_PATH = /home/austin/vulkansdk/x86_64
-STB_INCLUDE_PATH = /home/austin/libs/stb
-CFLAGS = -std=c++17 -I$(VULKAN_SDK_PATH)/include -I$(STB_INCLUDE_PATH)
+LIBS := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/libs
+VULKAN_SDK_PATH = $(LIBS)/vulkansdk/x86_64
+HEADER_ONLY_INCLUDE_PATH = $(LIBS)
+CFLAGS = -std=c++17 -I$(VULKAN_SDK_PATH)/include -I$(HEADER_ONLY_INCLUDE_PATH)
 LDFLAGS = -g -L$(VULKAN_SDK_PATH)/lib `pkg-config --static --libs glfw3` -lvulkan
 SRC = $(wildcard src/*.cpp) \
 	  $(wildcard src/renderer/*.cpp)
