@@ -24,6 +24,8 @@
 #include <algorithm>
 #include <fstream>
 #include <ctime>
+#include <unordered_map>
+
 #include "queuefamilyindices.h"
 #include "swapchainsupportdetails.h"
 #include "vertex.h"
@@ -96,6 +98,7 @@ private:
 	std::vector<VkCommandBuffer> commandBuffers;
 
 	// Textures
+	uint32_t mipLevels;
 	VkImage textureImage;
 	VkDeviceMemory textureImageMemory;
 	VkImageView textureImageView;
@@ -127,24 +130,11 @@ private:
 	// Descriptor Sets
 	std::vector<VkDescriptorSet> descriptorSets;
 
-	// (Temporary) hard-coded vertices to draw
-	const std::vector<Vertex> vertices = {
-		{{-0.5f, -0.5f,  0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-		{{ 0.5f, -0.5f,  0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-		{{ 0.5f,  0.5f,  0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-		{{-0.5f,  0.5f,  0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+	// Vertices to draw
+	std::vector<Vertex> vertices;
 
-		{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-		{{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-		{{ 0.5f,  0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-		{{-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-	};
-
-	// (Temporary) hard-coded indices of vertices to draw
-	const std::vector<uint16_t> indices = {
-		0, 1, 2, 2, 3, 0,
-		4, 5, 6, 6, 7, 4
-	};
+	// Indices of vertices to draw
+	std::vector<uint32_t> indices;
 
 	// Index of current frame for tracking semaphore to use
 	size_t currentFrame = 0;
@@ -156,6 +146,14 @@ private:
 	VkImage depthImage;
 	VkDeviceMemory depthImageMemory;
 	VkImageView depthImageView;
+	
+	// Max supported samples for antialiasing
+	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+	
+	// Render target for antialiasing
+	VkImage colorImage;
+	VkDeviceMemory colorImageMemory;
+	VkImageView colorImageView;
 
 	void initWindow();
 
@@ -189,8 +187,11 @@ private:
 	// Creates Window using GLFW
 	void createSurface();
 
-		// Choose physical device
+	// Choose physical device
 	void pickPhysicalDevice();
+	
+	// Check maximum MSAA samples
+	VkSampleCountFlagBits getMaxUsableSampleCount();
 
 	// Check if a device has the properties and features needed to run this application
 	int rateDeviceSuitability(VkPhysicalDevice device);
@@ -237,30 +238,36 @@ private:
 		VkBuffer& buffer, VkDeviceMemory& bufferMemory
 	);
 	
+	void createColorResources();
+	
 	void createDepthResources();
 	
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
 	void createTextureImage();
+	
+	void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 
 	void createTextureImageView();
 	
 	void createTextureSampler();
 
-	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLvls);
 
 	void createImage(
-		uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, 
+		uint32_t width, uint32_t height, uint32_t mipLvls, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, 
 		VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory
 	);
 
-	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLvls);
 
 	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
 	VkCommandBuffer beginSingleTimeCommands();
 
 	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+	
+	void loadModel();
 
 	void createVertexBuffer();
 	

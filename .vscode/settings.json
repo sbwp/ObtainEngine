@@ -41,6 +41,18 @@
 		"cstddef": "cpp",
 		"ctime": "cpp",
 		"chrono": "cpp",
-		"ratio": "cpp"
+		"ratio": "cpp",
+		"atomic": "cpp",
+		"bitset": "cpp",
+		"condition_variable": "cpp",
+		"csignal": "cpp",
+		"list": "cpp",
+		"unordered_set": "cpp",
+		"iomanip": "cpp",
+		"memory": "cpp",
+		"mutex": "cpp",
+		"numeric": "cpp",
+		"thread": "cpp",
+		"valarray": "cpp"
 	}
 }
