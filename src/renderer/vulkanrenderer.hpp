@@ -1,10 +1,8 @@
-#ifndef VULKAN_RENDERER_H
-#define VULKAN_RENDERER_H
+#ifndef VULKAN_RENDERER_HPP
+#define VULKAN_RENDERER_HPP
 
-#ifndef GLFW_INCLUDE_VULKAN
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#endif // vulkan
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -26,10 +24,10 @@
 #include <ctime>
 #include <unordered_map>
 
-#include "queuefamilyindices.h"
-#include "swapchainsupportdetails.h"
-#include "vertex.h"
-#include "uniformbufferobject.h"
+#include "queuefamilyindices.hpp"
+#include "swapchainsupportdetails.hpp"
+#include "vertex.hpp"
+#include "uniformbufferobject.hpp"
 
 class VulkanRenderer {
 public:
@@ -304,4 +302,4 @@ private:
 
 };
 
-#endif //VULKAN_RENDERER_H
+#endif // VULKAN_RENDERER_HPP

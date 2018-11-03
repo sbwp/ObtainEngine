@@ -1,5 +1,5 @@
-#ifndef QUEUE_FAMILY_INDICES_H
-#define QUEUE_FAMILY_INDICES_H
+#ifndef QUEUE_FAMILY_INDICES_HPP
+#define QUEUE_FAMILY_INDICES_HPP
 
 #include <optional>
 
@@ -12,4 +12,4 @@ struct QueueFamilyIndices {
 	}
 };
 
-#endif // QUEUE_FAMILY_INDICES_H
+#endif // QUEUE_FAMILY_INDICES_HPP

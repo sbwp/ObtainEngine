@@ -1,5 +1,5 @@
-#ifndef UNIFORM_BUFFER_OBJECT_H
-#define UNIFORM_BUFFER_OBJECT_H
+#ifndef UNIFORM_BUFFER_OBJECT_HPP
+#define UNIFORM_BUFFER_OBJECT_HPP
 
 #include <glm/glm.hpp>
 
@@ -9,4 +9,4 @@ struct UniformBufferObject {
 	glm::mat4 proj;
 };
 
-#endif // UNIFORM_BUFFER_OBJECT_H
+#endif // UNIFORM_BUFFER_OBJECT_HPP
