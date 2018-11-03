@@ -1,7 +1,8 @@
+#ifndef VERTEX_HPP
+#define VERTEX_HPP
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#ifndef VERTEX_H
-#define VERTEX_H
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
@@ -66,4 +67,4 @@ namespace std {
 	};
 }
 
-#endif // VERTEX_H
+#endif // VERTEX_HPP
