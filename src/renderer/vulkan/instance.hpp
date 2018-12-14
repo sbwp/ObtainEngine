@@ -23,6 +23,7 @@ namespace Obtain::Graphics::Vulkan {
 			vk::UniqueInstance instance;
 			vk::Optional<const vk::AllocationCallbacks> allocator = nullptr;
 			
+			vk::SurfaceKHR surface;
 			vk::PhysicalDevice physicalDevice;
 			vk::UniqueDevice device;
 			GraphicsPipeline graphicsPipeline;

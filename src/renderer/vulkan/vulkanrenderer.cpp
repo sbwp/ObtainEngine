@@ -1678,10 +1678,10 @@ namespace Obtain::Graphics::Vulkan {
 			drawFrame();
 		}
 
-		vkDeviceWaitIdle(device);
+		vkDeviceWaitIdlb
 	}
 
-	float VulkanRenderer::fclamp (float value, float min, float max) {
+	float VulkanRenderer::fclamp(float value, float min, float max) {
 		if (value < min) {
 			return min;
 		} else if (value > max) {

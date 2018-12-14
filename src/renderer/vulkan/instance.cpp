@@ -32,7 +32,7 @@ namespace Obtain::Graphics::Vulkan {
 		);
 
 		// Create the instance
-		instance = vk::createInstanceUnique(createInfo);
+		instance = vk::createInstanceUnique(createInfo, allocator);
 
 		// Get number of Vulkan extensions supported
 		uint32_t extensionCount = 0;
@@ -64,6 +64,13 @@ namespace Obtain::Graphics::Vulkan {
 			throw std::runtime_error("required extension(s) missing");
 		}
 		
+		auto c_surface = VkSurfaceKHR(surface);
+		// Creates Window using GLFW
+		if (glfwCreateWindowSurface(*instance, window, nullptr, &c_surface) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create window surface!");
+		}
+		
+		/*** Temporary for testing ***/
 		while (!glfwWindowShouldClose(window)) {
 			glfwPollEvents();
 		}
