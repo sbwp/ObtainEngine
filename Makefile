@@ -4,6 +4,7 @@ HEADER_ONLY_INCLUDE_PATH = $(LIBS)
 CFLAGS = -std=c++17 -I$(VULKAN_SDK_PATH)/include -I$(HEADER_ONLY_INCLUDE_PATH)
 LDFLAGS = -O3 -g -L$(VULKAN_SDK_PATH)/lib `pkg-config --static --libs glfw3` -lvulkan
 SRC = $(wildcard src/*.cpp) \
+	  $(wildcard src/renderer/*.cpp) \
 	  $(wildcard src/renderer/vulkan/*.cpp)
 OBJ = $(addprefix intermediate/,$(SRC:.cpp=.o))
 SHADERS = $(wildcard src/renderer/shaders/shader.*)

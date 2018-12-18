@@ -13,6 +13,8 @@ namespace Obtain::Graphics::Vulkan {
 		public:
 			Instance(std::string gameTitle, std::array<uint32_t, 3> gameVersion);
 			~Instance();
+			
+			void run();
 		private:
 			std::string title;
 			uint32_t version;
