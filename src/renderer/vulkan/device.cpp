@@ -77,8 +77,11 @@ namespace Obtain::Graphics::Vulkan {
 	// Check maximum MSAA samples
 	vk::SampleCountFlagBits Device::getMaxUsableSampleCount() {
 		vk::PhysicalDeviceProperties physicalDeviceProperties = physicalDevice.getProperties();
-
-		vk::SampleCountFlags counts = std::min(physicalDeviceProperties.limits.framebufferColorSampleCounts, physicalDeviceProperties.limits.framebufferDepthSampleCounts);
+		vk::SampleCountFlags counts =
+			static_cast<uint32_t>(physicalDeviceProperties.limits.framebufferColorSampleCounts)
+			< static_cast<uint32_t>(physicalDeviceProperties.limits.framebufferDepthSampleCounts) 
+			? physicalDeviceProperties.limits.framebufferColorSampleCounts
+			: physicalDeviceProperties.limits.framebufferDepthSampleCounts;
 		if (counts & vk::SampleCountFlagBits::e64) { return vk::SampleCountFlagBits::e64; }
 		if (counts & vk::SampleCountFlagBits::e32) { return vk::SampleCountFlagBits::e32; }
 		if (counts & vk::SampleCountFlagBits::e16) { return vk::SampleCountFlagBits::e16; }
@@ -113,15 +116,15 @@ namespace Obtain::Graphics::Vulkan {
 		bool extensionsSupported = checkDeviceExtensionSupport(device);
 
 		// Check for sufficient swap chains
-		bool swapChainAdequate = false;
+		bool swapchainAdequate = false;
 		if (extensionsSupported) {
-			SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, surface);
-			swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+			SwapchainSupportDetails swapchainSupport = querySwapchainSupport(device, surface);
+			swapchainAdequate = !swapchainSupport.formats.empty() && !swapchainSupport.presentModes.empty();
 		}
 
 		// Check for missing features that are complete dealbreakers
 		if (!(deviceFeatures.geometryShader && findQueueFamilies(device, surface).isComplete() &&
-			extensionsSupported && swapChainAdequate && deviceFeatures.samplerAnisotropy))
+			extensionsSupported && swapchainAdequate && deviceFeatures.samplerAnisotropy))
 		{
 			// TODO: instead of disqualifying for missing Anistropy here, conditionally use it
 			return 0;
@@ -130,29 +133,17 @@ namespace Obtain::Graphics::Vulkan {
 		return score;
 	}
 	
-	SwapChainSupportDetails Device::querySwapChainSupport(vk::PhysicalDevice device,
+	SwapchainSupportDetails Device::querySwapchainSupport(vk::PhysicalDevice device,
 		vk::SurfaceKHR surface
 	) {
-		SwapChainSupportDetails details;
+		SwapchainSupportDetails details;
 
 		details.capabilities = physicalDevice.getSurfaceCapabilitiesKHR(surface);
 
 		// Check size of formats
-		uint32_t formatCount;
-		physicalDevice.getSurfaceFormatsKHR(surface, &formatCount);
+		details.formats = physicalDevice.getSurfaceFormatsKHR(surface);
 
-		if (formatCount != 0) {
-			// Resize destination and then requery to store results there
-			details.formats.resize(formatCount);
-			details.formats = physicalDevice.getSurfaceFormatsKHR(surface, &formatCount);
-		}
-
-		uint32_t presentModeCount;
-		physicalDevice.getSurfacePresentModesKHR(surface, &presentModeCount, nullptr);
-		if (presentModeCount != 0) {
-			details.presentModes.resize(presentModeCount);
-			details.presentModes = physicalDevice.getSurfacePresentModesKHR(surface, &presentModeCount);
-		}
+		details.presentModes = physicalDevice.getSurfacePresentModesKHR(surface);
 
 		return details;
 	}

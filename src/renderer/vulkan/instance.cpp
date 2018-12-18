@@ -70,11 +70,6 @@ namespace Obtain::Graphics::Vulkan {
 			throw std::runtime_error("failed to create window surface!");
 		}
 		
-		/*** Temporary for testing ***/
-		while (!glfwWindowShouldClose(window)) {
-			glfwPollEvents();
-		}
-		exit(0);
 		// Leaving out validation layers for now until I get a better feel for vulkan.hpp
 		// if (enableValidationLayers) {
 		// 	vk::DispatchLoaderDynamic dldy;
@@ -99,6 +94,12 @@ namespace Obtain::Graphics::Vulkan {
 		// 		func(instance, callback, pAllocator);
 		// 	}
 		// }
+	}
+	
+	void Instance::run() {
+		while (!glfwWindowShouldClose(window)) {
+			glfwPollEvents();
+		}
 	}
 	
 	void Instance::initWindow() {

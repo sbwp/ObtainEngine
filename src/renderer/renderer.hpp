@@ -4,12 +4,7 @@
 namespace Obtain::Graphics {
 	class Renderer {
 		public:
-		void run();
-		
-		protected:
-		virtual void init();
-		virtual void mainLoop();
-		virtual void cleanup();
+		virtual void run() = 0;
 		
 	};
 }

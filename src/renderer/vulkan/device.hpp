@@ -3,6 +3,9 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "queuefamilyindices.hpp"
+#include "swapchainsupportdetails.hpp"
+
 namespace Obtain::Graphics::Vulkan {
 	class Device {
 		public:
@@ -20,7 +23,7 @@ namespace Obtain::Graphics::Vulkan {
 			bool checkDeviceExtensionSupport(vk::PhysicalDevice device);
 			QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface);
 			int rateDeviceSuitability(vk::PhysicalDevice device, vk::SurfaceKHR surface);
-			SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice device, vk::SurfaceKHR surface);
+			SwapchainSupportDetails querySwapchainSupport(vk::PhysicalDevice device, vk::SurfaceKHR surface);
 	};
 }
 
