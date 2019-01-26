@@ -13,7 +13,7 @@ namespace Obtain::Graphics::Vulkan {
 	) {
 		physicalDevice = choosePhysicalDevice(instance, surface);
 		
-		QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
+		QueueFamilyIndices indices = QueueFamilyIndices::findQueueFamilies(physicalDevice, surface);
 
 		std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
 		std::set<uint32_t> uniqueQueueFamilies = 
@@ -97,10 +97,10 @@ namespace Obtain::Graphics::Vulkan {
 	// Check if a device has the properties and features needed to run this application
 	int Device::rateDeviceSuitability(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
 		// Get device properties
-		auto deviceProperties = physicalDevice.getProperties();
+		auto deviceProperties = device.getProperties();
 
 		// Get device features
-		auto deviceFeatures = physicalDevice.getFeatures();
+		auto deviceFeatures = device.getFeatures();
 		
 		int score = 0;
 
@@ -118,12 +118,12 @@ namespace Obtain::Graphics::Vulkan {
 		// Check for sufficient swap chains
 		bool swapchainAdequate = false;
 		if (extensionsSupported) {
-			SwapchainSupportDetails swapchainSupport = querySwapchainSupport(device, surface);
+			SwapchainSupportDetails swapchainSupport = SwapchainSupportDetails::querySwapchainSupport(device, surface);
 			swapchainAdequate = !swapchainSupport.formats.empty() && !swapchainSupport.presentModes.empty();
 		}
 
 		// Check for missing features that are complete dealbreakers
-		if (!(deviceFeatures.geometryShader && findQueueFamilies(device, surface).isComplete() &&
+		if (!(deviceFeatures.geometryShader && QueueFamilyIndices::findQueueFamilies(device, surface).isComplete() &&
 			extensionsSupported && swapchainAdequate && deviceFeatures.samplerAnisotropy))
 		{
 			// TODO: instead of disqualifying for missing Anistropy here, conditionally use it
@@ -131,51 +131,6 @@ namespace Obtain::Graphics::Vulkan {
 		}
 
 		return score;
-	}
-	
-	SwapchainSupportDetails Device::querySwapchainSupport(vk::PhysicalDevice device,
-		vk::SurfaceKHR surface
-	) {
-		SwapchainSupportDetails details;
-
-		details.capabilities = physicalDevice.getSurfaceCapabilitiesKHR(surface);
-
-		// Check size of formats
-		details.formats = physicalDevice.getSurfaceFormatsKHR(surface);
-
-		details.presentModes = physicalDevice.getSurfacePresentModesKHR(surface);
-
-		return details;
-	}
-
-	// Find queue families
-	QueueFamilyIndices Device::findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
-		QueueFamilyIndices indices;
-		
-		std::vector<vk::QueueFamilyProperties> queueFamilies = device.getQueueFamilyProperties();
-
-		int i = 0;
-		for (const auto& queueFamily : queueFamilies) {
-
-			vk::Bool32 presentSupport = false;
-			device.getSurfaceSupportKHR(i, surface, &presentSupport);
-
-			if (queueFamily.queueCount > 0 && presentSupport) {
-				indices.presentFamily = i;
-			}
-
-			if (queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
-				indices.graphicsFamily = i;
-			}
-			
-			if (indices.isComplete()) {
-				break;
-			}
-
-			i++;
-		}
-
-		return indices;
 	}
 
 	// Check device extension support

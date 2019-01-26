@@ -20,10 +20,8 @@ namespace Obtain::Graphics::Vulkan {
 			
 			vk::PhysicalDevice choosePhysicalDevice(vk::Instance instance, vk::SurfaceKHR surface);
 			vk::SampleCountFlagBits getMaxUsableSampleCount();
-			bool checkDeviceExtensionSupport(vk::PhysicalDevice device);
-			QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface);
-			int rateDeviceSuitability(vk::PhysicalDevice device, vk::SurfaceKHR surface);
-			SwapchainSupportDetails querySwapchainSupport(vk::PhysicalDevice device, vk::SurfaceKHR surface);
+			static bool checkDeviceExtensionSupport(vk::PhysicalDevice device);
+			static int rateDeviceSuitability(vk::PhysicalDevice device, vk::SurfaceKHR surface);
 	};
 }
 

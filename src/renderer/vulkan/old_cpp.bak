@@ -1,6 +1,4 @@
 #include "vulkanrenderer.hpp"
-#define SKIP_THIS
-#ifndef SKIP_THIS
 
 #include <ctime>
 #include <fstream>
@@ -1827,4 +1825,3 @@ namespace Obtain::Graphics::Vulkan {
 		glfwTerminate();
 	}
 }
-#endif // SKIP_THIS

@@ -11,10 +11,16 @@
 namespace Obtain::Graphics::Vulkan {
 	class Instance {
 		public:
+			vk::PhysicalDevice physicalDevice;
+			vk::UniqueDevice device;
+			vk::SurfaceKHR surface;
+			
 			Instance(std::string gameTitle, std::array<uint32_t, 3> gameVersion);
 			~Instance();
 			
 			void run();
+			std::array<int, 2> getWindowSize();
+			void waitSizeNonzero();
 		private:
 			std::string title;
 			uint32_t version;
@@ -25,9 +31,6 @@ namespace Obtain::Graphics::Vulkan {
 			vk::UniqueInstance instance;
 			vk::Optional<const vk::AllocationCallbacks> allocator = nullptr;
 			
-			vk::SurfaceKHR surface;
-			vk::PhysicalDevice physicalDevice;
-			vk::UniqueDevice device;
 			GraphicsPipeline graphicsPipeline;
 
 			const std::vector<const char*> validationLayers = {
