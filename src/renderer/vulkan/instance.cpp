@@ -102,6 +102,21 @@ namespace Obtain::Graphics::Vulkan {
 		}
 	}
 	
+	std::array<int, 2> Instance::getWindowSize() {
+		int width, height;
+		glfwGetFramebufferSize(window, &width, &height);
+		return std::array<int, 2>({width, height});
+	}
+	
+	// If window is minimized or otherwise has 0 height or width, wait
+	void Instance::waitSizeNonzero() {
+		int width = 0, height = 0;
+		while (width == 0 || height == 0) {
+			glfwGetFramebufferSize(window, &width, &height);
+			glfwWaitEvents();
+		}
+	}
+	
 	void Instance::initWindow() {
 		// Initialize GLFW
 		glfwInit();

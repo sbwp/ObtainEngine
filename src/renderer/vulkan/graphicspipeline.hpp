@@ -18,6 +18,8 @@ namespace Obtain::Graphics::Vulkan {
 			vk::Pipeline graphicsPipeline;
 			vk::RenderPass renderPass;
 			
+			void createImageViews();
+			void createRenderPass();
 	};
 	
 }
