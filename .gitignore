@@ -260,8 +260,14 @@ paket-files/
 __pycache__/
 *.pyc
 
+.vscode/*
+
 libs/vulkansdk/*
 
 build/*
 intermediate/*
 oldsrc/*
+
+*.vcxproj
+*.vcxproj.filters
+*.sln
