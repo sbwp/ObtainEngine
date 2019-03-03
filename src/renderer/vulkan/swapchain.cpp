@@ -22,8 +22,9 @@ namespace Obtain::Graphics::Vulkan {
 		);
 		
 		vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapchainSupport.formats);
+		format = surfaceFormat.format;
 		vk::PresentModeKHR presentMode = chooseSwapPresentMode(swapchainSupport.presentModes);
-		vk::Extent2D extent = chooseSwapExtent(swapchainSupport.capabilities, windowSize);
+		extent = chooseSwapExtent(swapchainSupport.capabilities, windowSize);
 		
 		uint32_t imageCount = swapchainSupport.capabilities.minImageCount + 1;
 		if (swapchainSupport.capabilities.maxImageCount > 0 &&
@@ -47,7 +48,7 @@ namespace Obtain::Graphics::Vulkan {
 			vk::SwapchainCreateFlagsKHR(),
 			surface,
 			imageCount,
-			surfaceFormat.format,
+			format,
 			surfaceFormat.colorSpace,
 			extent,
 			1U,
@@ -63,9 +64,37 @@ namespace Obtain::Graphics::Vulkan {
 		);
 		
 		swapchain = device->createSwapchainKHRUnique(createInfo);
+		images = device->getSwapchainImagesKHR(*swapchain);
+		imageViews.resize(images.size());
+		
+		for (size_t i = 0; i < images.size(); i++) {
+			vk::ImageViewCreateInfo createInfo(
+				vk::ImageViewCreateFlags(),
+				images[i],
+				vk::ImageViewType::e2D,
+				format,
+				vk::ComponentMapping(
+					vk::ComponentSwizzle::eIdentity, // r
+					vk::ComponentSwizzle::eIdentity, // g
+					vk::ComponentSwizzle::eIdentity, // b
+					vk::ComponentSwizzle::eIdentity  // a
+				),
+				vk::ImageSubresourceRange(
+					vk::ImageAspectFlagBits::eColor,
+					0U, // base mip level
+					1U, // level count
+					0U, // base array level
+					1U  // layer count
+				)
+			);
+			imageViews[i] = device->createImageView(createInfo);
+		}
 	}
 	
 	Swapchain::~Swapchain() {
+		for (auto imageView : imageViews) {
+			device->destroyImageView(imageView);
+		}
 	}
 	
 	/******************************************

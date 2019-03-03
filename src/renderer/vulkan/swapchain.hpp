@@ -23,9 +23,10 @@ namespace Obtain::Graphics::Vulkan {
 		
 	private:
 		vk::UniqueSwapchainKHR swapchain;
-		std::vector<vk::Image> swapchainImages;
-		vk::Format swapchainImageFormat;
-		vk::Extent2D swapchainExtent;
+		std::vector<vk::Image> images;
+		std::vector<vk::ImageView> imageViews;
+		vk::Format format;
+		vk::Extent2D extent;
 		
 		vk::UniqueInstance &instance;
 		vk::UniqueDevice &device;
