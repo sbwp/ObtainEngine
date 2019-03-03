@@ -24,7 +24,7 @@ namespace Obtain::Graphics::Vulkan {
 		return USE_VALIDATION_LAYERS;
 	}
 	
-	vk::DebugUtilsMessengerEXT Validation::setupDebugMessenger(
+	vk::DebugUtilsMessengerEXT Validation::createDebugMessenger(
 		vk::UniqueInstance &instance,
 		vk::DispatchLoaderDynamic loader
 	) {
@@ -39,6 +39,14 @@ namespace Obtain::Graphics::Vulkan {
 			debugCallback
 		);
 		return instance->createDebugUtilsMessengerEXT(createInfo, nullptr, loader);
+	}
+	
+	std::vector<const char*> Validation::getValidationLayers() {
+		if (USE_VALIDATION_LAYERS) {
+			return validationLayers;
+		} else {
+			return {};
+		}
 	}
 
 	/******************************************

@@ -10,23 +10,29 @@
 namespace Obtain::Graphics::Vulkan {
 	class VulkanRenderer : public Renderer {
 	public:
-		VulkanRenderer(std::string gameTitle, std::array<uint32_t, 3> gameVersion);
+		VulkanRenderer(
+			std::string gameTitle,
+			std::array<uint32_t, 3> gameVersion,
+			std::array<uint32_t, 3> engineVersion
+		);
 		~VulkanRenderer();
 		void run();
 
 	private:
+		std::string gameTitle;
+		std::array<uint32_t, 3> gameVersion;
+		std::array<uint32_t, 3> engineVersion;
 		std::array<u_int32_t, 2> windowSize;
 		GLFWwindow* window;
 		vk::UniqueInstance instance;
-		std::string gameTitle;
-		std::array<uint32_t, 3> gameVersion;
 		vk::DispatchLoaderDynamic loader;
 		vk::DebugUtilsMessengerEXT debugMessenger;
+		vk::PhysicalDevice physicalDevice;
+		vk::UniqueDevice device;
+		vk::Queue graphicsQueue;
+		vk::UniqueSurfaceKHR surface;
 		
 		void initWindow();
-		void createVkInstance();
-		bool checkForSupportedExtensions(std::vector<const char*> requiredExtensions);
-		std::vector<const char*> getRequiredExtensions(bool useValidationLayers);
 	};
 }
 
