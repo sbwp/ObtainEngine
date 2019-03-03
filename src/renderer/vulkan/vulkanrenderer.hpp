@@ -6,6 +6,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../renderer.hpp"
+#include "swapchain.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 	class VulkanRenderer : public Renderer {
@@ -36,6 +37,8 @@ namespace Obtain::Graphics::Vulkan {
 		
 		vk::Queue graphicsQueue;
 		vk::Queue presentationQueue;
+		
+		Swapchain *swapchain;
 		
 		void initWindow();
 	};

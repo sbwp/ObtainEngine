@@ -17,8 +17,8 @@ namespace Obtain::Graphics::Vulkan {
 		std::array<uint32_t, 3> gameVersion,
 		std::array<uint32_t, 3> engineVersion
 	)
-		: gameTitle(gameTitle), gameVersion(gameVersion)
-	{
+		:gameTitle(gameTitle), gameVersion(gameVersion)
+	{ 
 		windowSize = {1600, 900};
 		initWindow();
 		
@@ -33,10 +33,13 @@ namespace Obtain::Graphics::Vulkan {
 		QueueFamilyIndices indices = QueueFamilyIndices::findQueueFamilies(physicalDevice, *surface);
 		graphicsQueue = device->getQueue(indices.graphicsFamily.value(), 0);
 		presentationQueue = device->getQueue(indices.presentFamily.value(), 0);
+		
+		swapchain = new Swapchain(instance, physicalDevice, device, *surface, windowSize, indices);
 	}
 	
 	VulkanRenderer::~VulkanRenderer()
 	{
+		delete(swapchain);
 		instance->destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, loader);
 		glfwDestroyWindow(window);
 		glfwTerminate();
