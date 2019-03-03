@@ -21,20 +21,23 @@ namespace Obtain::Graphics::Vulkan {
 	{
 		windowSize = {1600, 900};
 		initWindow();
+		
 		instance = Instance::createVkInstance(gameTitle, gameVersion, engineVersion);
 		loader.init(*instance);
 		debugMessenger = Validation::createDebugMessenger(instance, loader);
+		
 		surface = Device::createSurface(*instance, window);
 		physicalDevice = Device::selectPhysicalDevice(instance, surface);
 		device = Device::createLogicalDevice(instance, physicalDevice, surface);
-		graphicsQueue = device->getQueue(QueueFamilyIndices::findQueueFamilies(physicalDevice, *surface).graphicsFamily.value(), 0);
+		
+		QueueFamilyIndices indices = QueueFamilyIndices::findQueueFamilies(physicalDevice, *surface);
+		graphicsQueue = device->getQueue(indices.graphicsFamily.value(), 0);
+		presentationQueue = device->getQueue(indices.presentFamily.value(), 0);
 	}
 	
 	VulkanRenderer::~VulkanRenderer()
 	{
-		device.reset();
 		instance->destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, loader);
-		instance.reset();
 		glfwDestroyWindow(window);
 		glfwTerminate();
 	}
