@@ -68,8 +68,8 @@ namespace Obtain::Graphics::Vulkan {
 			queueCreateInfos.data(),
 			static_cast<uint32_t>(validationLayers.size()),
 			validationLayers.size() == 0? (const char *const *)nullptr : validationLayers.data(),
-			0U,
-			(const char *const *)nullptr,
+			static_cast<uint32_t>(deviceExtensions.size()),
+			deviceExtensions.data(),
 			&deviceFeatures
 		);
 		
@@ -88,6 +88,11 @@ namespace Obtain::Graphics::Vulkan {
 	/******************************************
 	 ***************** private *****************
 	 ******************************************/
+		
+	const std::vector <const char*> Device::deviceExtensions = {
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME
+	};
+	
 	uint32_t Device::ratePhysicalDeviceSuitability(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
 		// Get device properties
 		auto deviceProperties = device.getProperties();
@@ -130,10 +135,6 @@ namespace Obtain::Graphics::Vulkan {
 		
 		std::vector<vk::ExtensionProperties> availableExtensions;
 		availableExtensions = device.enumerateDeviceExtensionProperties();
-		
-		const std::vector <const char*> deviceExtensions = {
-			VK_KHR_SWAPCHAIN_EXTENSION_NAME
-		};
 
 		std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 

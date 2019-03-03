@@ -19,6 +19,7 @@ namespace Obtain::Graphics::Vulkan {
 		);
 		static vk::UniqueSurfaceKHR createSurface(const vk::Instance instance, GLFWwindow *window);
 	private:
+		static const std::vector <const char*> deviceExtensions;
 		static uint32_t ratePhysicalDeviceSuitability(vk::PhysicalDevice device, vk::SurfaceKHR surface);
 		static bool checkDeviceExtensionSupport(vk::PhysicalDevice device);
 		
