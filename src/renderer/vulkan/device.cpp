@@ -1,0 +1,137 @@
+#include "device.hpp"
+
+#include <vector>
+#include <set>
+#include <map>
+#include <memory>
+
+#include "swapchainsupportdetails.hpp"
+#include "queuefamilyindices.hpp"
+#include "validation.hpp"
+
+namespace Obtain::Graphics::Vulkan {
+	/******************************************
+	 ***************** public *****************
+	 ******************************************/
+	vk::PhysicalDevice Device::selectPhysicalDevice(
+		vk::UniqueInstance &instance,
+		vk::UniqueSurfaceKHR &surface
+	) {
+		std::vector<vk::PhysicalDevice> devices = instance->enumeratePhysicalDevices();
+		if (devices.size() == 0) {
+			throw std::runtime_error("no supported GPUs found");
+		}
+		
+		std::multimap<uint32_t, vk::PhysicalDevice> deviceMap;
+		
+		for (const auto& device : devices) {
+			deviceMap.insert(std::make_pair(ratePhysicalDeviceSuitability(device, *surface), device));
+		}
+		
+		if (deviceMap.rbegin()->first > 0) {
+			return deviceMap.rbegin()->second;
+		} else {
+			throw std::runtime_error("no suitable GPUs found");
+		}
+	}
+	
+	vk::UniqueDevice Device::createLogicalDevice(
+		vk::UniqueInstance &instance,
+		vk::PhysicalDevice physicalDevice,
+		vk::UniqueSurfaceKHR &surface
+	) {
+		QueueFamilyIndices indices = QueueFamilyIndices::findQueueFamilies(physicalDevice, *surface);
+		const float queuePriority = 1.0f;
+		
+		vk::DeviceQueueCreateInfo queueCreateInfo(
+			vk::DeviceQueueCreateFlags(),
+			indices.graphicsFamily.value(),
+			1U,
+			&queuePriority
+		);
+		
+		vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
+		std::vector<const char*> validationLayers = Validation::getValidationLayers();
+		
+		vk::DeviceCreateInfo createInfo(
+			vk::DeviceCreateFlags(),
+			1U,
+			&queueCreateInfo,
+			static_cast<uint32_t>(validationLayers.size()),
+			validationLayers.size() == 0? (const char *const *)nullptr : validationLayers.data(),
+			0U,
+			(const char *const *)nullptr,
+			&deviceFeatures
+		);
+		
+		return physicalDevice.createDeviceUnique(createInfo);
+	}
+	
+	vk::UniqueSurfaceKHR Device::createSurface(const vk::Instance instance, GLFWwindow *window) {
+		VkSurfaceKHR surface;
+		
+		if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
+			throw std::runtime_error("could not create surface");
+		}
+		return vk::UniqueSurfaceKHR(surface, instance);
+	}
+
+	/******************************************
+	 ***************** private *****************
+	 ******************************************/
+	uint32_t Device::ratePhysicalDeviceSuitability(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
+		// Get device properties
+		auto deviceProperties = device.getProperties();
+
+		// Get device features
+		auto deviceFeatures = device.getFeatures();
+		
+		uint32_t score = 0;
+
+		// Discrete GPUs have a significant performance advantage
+		if (deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
+			score += 1000;
+		}
+
+		// Maximum possible size of textures affects graphics quality
+		score += deviceProperties.limits.maxImageDimension2D;
+
+		// Check if required Extensions are supported
+		bool extensionsSupported = checkDeviceExtensionSupport(device);
+
+		// Check for sufficient swap chains
+		bool swapchainAdequate = false;
+		if (extensionsSupported) {
+			SwapchainSupportDetails swapchainSupport = SwapchainSupportDetails::querySwapchainSupport(device, surface);
+			swapchainAdequate = !swapchainSupport.formats.empty() && !swapchainSupport.presentModes.empty();
+		}
+
+		// Check for missing features that are complete dealbreakers
+		if (!(deviceFeatures.geometryShader && QueueFamilyIndices::findQueueFamilies(device, surface).isComplete() &&
+			extensionsSupported && swapchainAdequate && deviceFeatures.samplerAnisotropy))
+		{
+			// TODO: instead of disqualifying for missing Anistropy here, conditionally use it
+			return 0;
+		}
+
+		return score;
+	}
+	
+	bool Device::checkDeviceExtensionSupport(vk::PhysicalDevice device) {
+		
+		std::vector<vk::ExtensionProperties> availableExtensions;
+		availableExtensions = device.enumerateDeviceExtensionProperties();
+		
+		const std::vector <const char*> deviceExtensions = {
+			VK_KHR_SWAPCHAIN_EXTENSION_NAME
+		};
+
+		std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+
+		for (const auto& extension : availableExtensions) {
+			requiredExtensions.erase(extension.extensionName);
+		}
+
+		return requiredExtensions.empty();
+	}
+}

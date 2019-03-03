@@ -9,10 +9,11 @@ namespace Obtain::Graphics::Vulkan {
 		static const std::vector<const char*> validationLayers;
 		
 		static bool useValidation();
-		static vk::DebugUtilsMessengerEXT setupDebugMessenger(
+		static vk::DebugUtilsMessengerEXT createDebugMessenger(
 			vk::UniqueInstance &instance,
 			vk::DispatchLoaderDynamic loader
 		);
+		static std::vector<const char*> getValidationLayers();
 
 	private:
 		static bool areValidationLayersSupported();

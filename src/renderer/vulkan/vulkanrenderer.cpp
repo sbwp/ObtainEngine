@@ -3,24 +3,36 @@
 #include <vector>
 #include <iostream>
 
+#include "instance.hpp"
 #include "validation.hpp"
+#include "device.hpp"
+#include "queuefamilyindices.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 	/******************************************
 	 ***************** public *****************
 	 ******************************************/
-	VulkanRenderer::VulkanRenderer(std::string gameTitle,std::array<uint32_t, 3> gameVersion)
+	VulkanRenderer::VulkanRenderer(
+		std::string gameTitle,
+		std::array<uint32_t, 3> gameVersion,
+		std::array<uint32_t, 3> engineVersion
+	)
 		: gameTitle(gameTitle), gameVersion(gameVersion)
 	{
 		windowSize = {1600, 900};
 		initWindow();
-		createVkInstance();
+		instance = Instance::createVkInstance(gameTitle, gameVersion, engineVersion);
 		loader.init(*instance);
-		debugMessenger = Validation::setupDebugMessenger(instance, loader);
+		debugMessenger = Validation::createDebugMessenger(instance, loader);
+		surface = Device::createSurface(*instance, window);
+		physicalDevice = Device::selectPhysicalDevice(instance, surface);
+		device = Device::createLogicalDevice(instance, physicalDevice, surface);
+		graphicsQueue = device->getQueue(QueueFamilyIndices::findQueueFamilies(physicalDevice, *surface).graphicsFamily.value(), 0);
 	}
 	
 	VulkanRenderer::~VulkanRenderer()
 	{
+		device.reset();
 		instance->destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, loader);
 		instance.reset();
 		glfwDestroyWindow(window);
@@ -37,78 +49,10 @@ namespace Obtain::Graphics::Vulkan {
 	/******************************************
 	 ***************** private *****************
 	 ******************************************/
-	
 	void VulkanRenderer::initWindow() {
 		glfwInit();
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // Don't create OpenGL context
 		glfwWindowHint(GLFW_RESIZABLE, false); // Temp: make window not resizable
 		window = glfwCreateWindow(windowSize[0], windowSize[1], gameTitle.c_str(), nullptr, nullptr);
-	}
-	
-	void VulkanRenderer::createVkInstance() {
-		vk::ApplicationInfo appInfo(
-			gameTitle.c_str(),
-			VK_MAKE_VERSION(gameVersion[0], gameVersion[1], gameVersion[2]),
-			"Obtain Engine",
-			VK_MAKE_VERSION(0, 0, 1), // engine gameVersion (replace with not constant)
-			VK_API_VERSION_1_1
-		);
-		
-		bool useValidationLayers = Validation::useValidation();
-		std::vector<const char*> requiredExtensions = getRequiredExtensions(useValidationLayers);
-		if (!checkForSupportedExtensions(requiredExtensions)) {
-			throw std::runtime_error("Required Extensions not supported");
-		}
-		
-		vk::InstanceCreateInfo createInfo(
-			vk::InstanceCreateFlags(),
-			&appInfo,
-			useValidationLayers? static_cast<uint32_t>(Validation::validationLayers.size()) : 0U,
-			useValidationLayers? Validation::validationLayers.data() : nullptr,
-			static_cast<uint32_t>(requiredExtensions.size()),
-			requiredExtensions.data()
-		);
-		
-		instance = vk::createInstanceUnique(createInfo);
-	}
-	
-	bool VulkanRenderer::checkForSupportedExtensions(std::vector<const char*> requiredExtensions) {
-		std::vector<vk::ExtensionProperties> extensions = vk::enumerateInstanceExtensionProperties();
-		
-		// Print all available extensions
-		std::cout << "available extensions:" << std::endl;
-		for (const auto& extension : extensions) {
-			std::cout << "\t" << extension.extensionName << std::endl;
-		}
-		
-		// Check each required extension for availability
-		for (const auto& requiredExtension : requiredExtensions) {
-			bool found = false;
-			for (const auto& extension : extensions) {
-				if (strcmp(extension.extensionName, requiredExtension) == 0) {
-					found = true;
-					break;
-				}
-			}
-			if (!found) {
-				std::cerr << "Required Extension " << requiredExtension << " not found." << std::endl;
-				return false;
-			}
-		}
-		return true;
-	}
-	
-	std::vector<const char*> VulkanRenderer::getRequiredExtensions(bool useValidationLayers) {
-		uint32_t glfwExtensionCount = 0;
-		const char** glfwExtensions;
-		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-		std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
-		if (useValidationLayers) {
-			extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-		}
-
-		return extensions;
 	}
 }
