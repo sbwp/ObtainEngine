@@ -42,21 +42,30 @@ namespace Obtain::Graphics::Vulkan {
 	) {
 		QueueFamilyIndices indices = QueueFamilyIndices::findQueueFamilies(physicalDevice, *surface);
 		const float queuePriority = 1.0f;
-		
-		vk::DeviceQueueCreateInfo queueCreateInfo(
-			vk::DeviceQueueCreateFlags(),
+		std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
+		std::set<uint32_t> uniqueQueueFamilies = {
 			indices.graphicsFamily.value(),
-			1U,
-			&queuePriority
-		);
+			indices.presentFamily.value()
+		};
+		
+		for (uint32_t queueFamily : uniqueQueueFamilies) {
+			queueCreateInfos.push_back(
+				vk::DeviceQueueCreateInfo(
+					vk::DeviceQueueCreateFlags(),
+					queueFamily,
+					1U,
+					&queuePriority
+				)
+			);
+		}
 		
 		vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
 		std::vector<const char*> validationLayers = Validation::getValidationLayers();
 		
 		vk::DeviceCreateInfo createInfo(
 			vk::DeviceCreateFlags(),
-			1U,
-			&queueCreateInfo,
+			static_cast<uint32_t>(queueCreateInfos.size()),
+			queueCreateInfos.data(),
 			static_cast<uint32_t>(validationLayers.size()),
 			validationLayers.size() == 0? (const char *const *)nullptr : validationLayers.data(),
 			0U,

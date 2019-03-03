@@ -23,14 +23,19 @@ namespace Obtain::Graphics::Vulkan {
 		std::array<uint32_t, 3> gameVersion;
 		std::array<uint32_t, 3> engineVersion;
 		std::array<u_int32_t, 2> windowSize;
+		
 		GLFWwindow* window;
 		vk::UniqueInstance instance;
+		
 		vk::DispatchLoaderDynamic loader;
 		vk::DebugUtilsMessengerEXT debugMessenger;
+		
+		vk::UniqueSurfaceKHR surface;
 		vk::PhysicalDevice physicalDevice;
 		vk::UniqueDevice device;
+		
 		vk::Queue graphicsQueue;
-		vk::UniqueSurfaceKHR surface;
+		vk::Queue presentationQueue;
 		
 		void initWindow();
 	};
