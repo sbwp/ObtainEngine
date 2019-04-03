@@ -6,22 +6,25 @@
 namespace Obtain::Graphics::Vulkan {
 	class Validation {
 	public:
-		static const std::vector<const char*> validationLayers;
-		
+		static const std::vector<const char *> validationLayers;
+
 		static bool useValidation();
+
 		static vk::DebugUtilsMessengerEXT createDebugMessenger(
-			vk::UniqueInstance &instance,
-			vk::DispatchLoaderDynamic loader
+				vk::UniqueInstance &instance,
+				vk::DispatchLoaderDynamic loader
 		);
-		static std::vector<const char*> getValidationLayers();
+
+		static std::vector<const char *> getValidationLayers();
 
 	private:
 		static bool areValidationLayersSupported();
-		static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback( 
-			VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-			VkDebugUtilsMessageTypeFlagsEXT messageType,
-			const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-			void* pUserData
+
+		static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+				VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+				VkDebugUtilsMessageTypeFlagsEXT messageType,
+				const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+				void *pUserData
 		);
 	};
 }
