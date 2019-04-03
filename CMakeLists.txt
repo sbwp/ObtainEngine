@@ -1,11 +1,50 @@
 cmake_minimum_required(VERSION 3.12)
 project(obtain)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
 set(CMAKE_CXX_STANDARD 17)
 
-find_package(PkgConfig REQUIRED)
-pkg_search_module(GLFW REQUIRED glfw3)
-include_directories(${GLFW_INCLUDE_DIRS})
-include_directories("libs")
-include_directories("libs/vulkansdk/x86_64/include")
-add_executable(obtain src/main.cpp src/renderer/renderer.cpp src/renderer/renderer.hpp src/renderer/vulkan/device.cpp src/renderer/vulkan/device.hpp src/renderer/vulkan/instance.cpp src/renderer/vulkan/instance.hpp src/renderer/vulkan/pipeline.cpp src/renderer/vulkan/pipeline.hpp src/renderer/vulkan/queuefamilyindices.hpp src/renderer/vulkan/shader.cpp src/renderer/vulkan/shader.hpp src/renderer/vulkan/swapchain.cpp src/renderer/vulkan/swapchain.hpp src/renderer/vulkan/swapchainsupportdetails.hpp src/renderer/vulkan/uniformbufferobject.hpp src/renderer/vulkan/validation.cpp src/renderer/vulkan/validation.hpp src/renderer/vulkan/vertex.hpp src/renderer/vulkan/vulkanrenderer.cpp src/renderer/vulkan/vulkanrenderer.hpp)
+add_subdirectory(libs/glfw)
+include_directories(libs/glfw/include)
+include_directories(libs/headeronly)
+find_package(Vulkan REQUIRED)
+
+add_custom_command(
+        OUTPUT assets/shaders/frag.spv assets/shaders/vert.spv
+        DEPENDS src/renderer/shaders/basic.frag src/renderer/shaders/basic.vert
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMAND ./compile-shaders.sh
+)
+
+add_custom_target(shaders ALL DEPENDS assets/shaders/frag.spv assets/shaders/vert.spv)
+
+add_executable(obtain src/main.cpp
+        src/renderer/renderer.cpp
+        src/renderer/renderer.hpp
+        src/renderer/vulkan/device.cpp
+        src/renderer/vulkan/device.hpp
+        src/renderer/vulkan/instance.cpp
+        src/renderer/vulkan/instance.hpp
+        src/renderer/vulkan/pipeline.cpp
+        src/renderer/vulkan/pipeline.hpp
+        src/renderer/vulkan/queuefamilyindices.hpp
+        src/renderer/vulkan/shader.cpp
+        src/renderer/vulkan/shader.hpp
+        src/renderer/vulkan/swapchain.cpp
+        src/renderer/vulkan/swapchain.hpp
+        src/renderer/vulkan/swapchainsupportdetails.hpp
+        src/renderer/vulkan/uniformbufferobject.hpp
+        src/renderer/vulkan/validation.cpp
+        src/renderer/vulkan/validation.hpp
+        src/renderer/vulkan/vertex.hpp
+        src/renderer/vulkan/vulkanrenderer.cpp
+        src/renderer/vulkan/vulkanrenderer.hpp
+        src/renderer/shaders/basic.frag
+        src/renderer/shaders/basic.vert
+        src/renderer/shaders/shader.frag
+        src/renderer/shaders/shader.vert)
+
+
+target_link_libraries(obtain glfw ${GLFW_LIBRARIES})
+target_include_directories(obtain PRIVATE Vulkan::Vulkan)
+target_link_libraries(obtain Vulkan::Vulkan)
