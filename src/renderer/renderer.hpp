@@ -3,9 +3,9 @@
 
 namespace Obtain::Graphics {
 	class Renderer {
-		public:
+	public:
 		virtual void run() = 0;
-		
+
 	};
 }
 

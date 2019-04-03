@@ -2,6 +2,7 @@
 #define UNIFORM_BUFFER_OBJECT_HPP
 
 #include <glm/glm.hpp>
+
 namespace Obtain::Graphics::Vulkan {
 	struct UniformBufferObject {
 		glm::mat4 model;
