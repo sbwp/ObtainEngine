@@ -1,4 +1,4 @@
-#include "vulkanrenderer.hpp"
+#include "vulkan-renderer.hpp"
 
 #include <vector>
 #include <iostream>
@@ -6,7 +6,7 @@
 #include "instance.hpp"
 #include "validation.hpp"
 #include "device.hpp"
-#include "queuefamilyindices.hpp"
+#include "queue-family-indices.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 	/******************************************

@@ -4,7 +4,7 @@
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
-#include "queuefamilyindices.hpp"
+#include "queue-family-indices.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 	class Swapchain {

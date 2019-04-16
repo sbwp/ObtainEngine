@@ -4,12 +4,12 @@
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
-#include "queuefamilyindices.hpp"
+#include "queue-family-indices.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 	class Pipeline {
 	public:
-		static vk::Pipeline createPipeline(vk::Device device);
+		static vk::Pipeline createPipeline(vk::Device device, vk::Extent2D extent);
 	};
 }
 
