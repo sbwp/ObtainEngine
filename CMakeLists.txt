@@ -27,18 +27,18 @@ add_executable(obtain src/main.cpp
         src/renderer/vulkan/instance.hpp
         src/renderer/vulkan/pipeline.cpp
         src/renderer/vulkan/pipeline.hpp
-        src/renderer/vulkan/queuefamilyindices.hpp
+        src/renderer/vulkan/queue-family-indices.hpp
         src/renderer/vulkan/shader.cpp
         src/renderer/vulkan/shader.hpp
         src/renderer/vulkan/swapchain.cpp
         src/renderer/vulkan/swapchain.hpp
-        src/renderer/vulkan/swapchainsupportdetails.hpp
-        src/renderer/vulkan/uniformbufferobject.hpp
+        src/renderer/vulkan/swapchain-support-details.hpp
+        src/renderer/vulkan/uniform-buffer-object.hpp
         src/renderer/vulkan/validation.cpp
         src/renderer/vulkan/validation.hpp
         src/renderer/vulkan/vertex.hpp
-        src/renderer/vulkan/vulkanrenderer.cpp
-        src/renderer/vulkan/vulkanrenderer.hpp
+        src/renderer/vulkan/vulkan-renderer.cpp
+        src/renderer/vulkan/vulkan-renderer.hpp
         src/renderer/shaders/basic.frag
         src/renderer/shaders/basic.vert
         src/renderer/shaders/shader.frag

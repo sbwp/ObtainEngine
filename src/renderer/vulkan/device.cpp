@@ -5,8 +5,8 @@
 #include <map>
 #include <memory>
 
-#include "swapchainsupportdetails.hpp"
-#include "queuefamilyindices.hpp"
+#include "swapchain-support-details.hpp"
+#include "queue-family-indices.hpp"
 #include "validation.hpp"
 
 namespace Obtain::Graphics::Vulkan {

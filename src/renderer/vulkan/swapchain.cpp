@@ -1,5 +1,5 @@
 #include "swapchain.hpp"
-#include "swapchainsupportdetails.hpp"
+#include "swapchain-support-details.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 
