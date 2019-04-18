@@ -25,8 +25,6 @@ add_executable(obtain src/main.cpp
         src/renderer/vulkan/device.hpp
         src/renderer/vulkan/instance.cpp
         src/renderer/vulkan/instance.hpp
-        src/renderer/vulkan/pipeline.cpp
-        src/renderer/vulkan/pipeline.hpp
         src/renderer/vulkan/queue-family-indices.hpp
         src/renderer/vulkan/shader.cpp
         src/renderer/vulkan/shader.hpp

@@ -43,6 +43,8 @@ namespace Obtain::Graphics::Vulkan {
 
 		Swapchain *swapchain;
 
+		vk::Pipeline pipeline;
+
 		void initWindow();
 	};
 }
