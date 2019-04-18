@@ -22,6 +22,8 @@ namespace Obtain::Graphics::Vulkan {
 
 		static void recreateSwapchain(Swapchain *swapchain);
 
+		vk::Extent2D getExtent();
+
 	private:
 		vk::UniqueSwapchainKHR swapchain;
 		std::vector<vk::Image> images;
@@ -31,6 +33,11 @@ namespace Obtain::Graphics::Vulkan {
 
 		vk::UniqueInstance &instance;
 		vk::UniqueDevice &device;
+
+		vk::UniquePipelineLayout layout;
+		vk::UniquePipeline pipeline;
+
+		vk::UniqueRenderPass renderPass;
 
 		vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
 				const std::vector<vk::SurfaceFormatKHR> &availableFormats
@@ -44,6 +51,9 @@ namespace Obtain::Graphics::Vulkan {
 				const vk::SurfaceCapabilitiesKHR &capabilities,
 				std::array<uint32_t, 2> windowSize
 		);
+
+		void createPipeline();
+		void createRenderPass();
 	};
 }
 

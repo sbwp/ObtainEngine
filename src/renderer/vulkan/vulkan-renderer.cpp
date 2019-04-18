@@ -70,6 +70,7 @@ namespace Obtain::Graphics::Vulkan {
 				windowSize,
 				indices
 		);
+
 	}
 
 	VulkanRenderer::~VulkanRenderer() {

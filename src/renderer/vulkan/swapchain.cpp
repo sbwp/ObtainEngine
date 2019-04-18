@@ -1,5 +1,6 @@
 #include "swapchain.hpp"
 #include "swapchain-support-details.hpp"
+#include "shader.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 
@@ -107,6 +108,10 @@ namespace Obtain::Graphics::Vulkan {
 		}
 	}
 
+	vk::Extent2D Swapchain::getExtent() {
+		return extent;
+	}
+
 	/******************************************
 	 ***************** private *****************
 	 ******************************************/
@@ -175,5 +180,180 @@ namespace Obtain::Graphics::Vulkan {
 
 			return actualExtent;
 		}
+	}
+
+	void Swapchain::createPipeline() {
+		Shader *vertShader = new Shader(
+			*device,
+			"basic.vert",
+			vk::ShaderStageFlagBits::eVertex
+		);
+		Shader *fragShader = new Shader(
+			*device,
+			"basic.frag",
+			vk::ShaderStageFlagBits::eFragment
+		);
+
+		auto vertexInputStateCreateInfo = vk::PipelineVertexInputStateCreateInfo(
+			vk::PipelineVertexInputStateCreateFlags(),
+			0,
+			nullptr,
+			0,
+			nullptr
+		);
+
+		auto inputAssemblyCreateInfo = vk::PipelineInputAssemblyStateCreateInfo(
+			vk::PipelineInputAssemblyStateCreateFlags(),
+			vk::PrimitiveTopology::eTriangleList,
+			false
+		);
+
+		auto viewport = vk::Viewport(
+			0.0f,
+			0.0f,
+			(float) extent.width,
+			(float) extent.height,
+			0.0f,
+			0.0f
+		);
+
+		auto scissor = vk::Rect2D(
+			vk::Offset2D(
+				0,
+				0
+			),
+			extent
+		);
+
+		auto viewportStateCreateInfo = vk::PipelineViewportStateCreateInfo(
+			vk::PipelineViewportStateCreateFlags(),
+			1,
+			&viewport,
+			1,
+			&scissor
+		);
+
+		auto rasterizerCreateInfo = vk::PipelineRasterizationStateCreateInfo(
+			vk::PipelineRasterizationStateCreateFlags(),
+			false,
+			false,
+			vk::PolygonMode::eFill,
+			vk::CullModeFlagBits::eBack,
+			vk::FrontFace::eClockwise,
+			false,
+			0.0f,
+			0.0f,
+			0.0f,
+			1.0f
+		);
+
+		auto multisamplingCreateInfo = vk::PipelineMultisampleStateCreateInfo(); // temporarily disabled
+
+		auto colorBlendAttachmentState = vk::PipelineColorBlendAttachmentState(
+			false,
+			vk::BlendFactor::eOne,
+			vk::BlendFactor::eZero,
+			vk::BlendOp::eAdd,
+			vk::BlendFactor::eOne,
+			vk::BlendFactor::eZero,
+			vk::BlendOp::eAdd,
+			vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+			vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+		);
+
+		auto colorBlendingCreateInfo = vk::PipelineColorBlendStateCreateInfo(
+			vk::PipelineColorBlendStateCreateFlags(),
+			false,
+			vk::LogicOp::eCopy,
+			1,
+			&colorBlendAttachmentState
+		);
+
+		std::vector<vk::DynamicState> dynamicStates = {
+			vk::DynamicState::eViewport,
+			vk::DynamicState::eLineWidth
+		};
+
+		auto dynamicStateCreateInfo = vk::PipelineDynamicStateCreateInfo(
+			vk::PipelineDynamicStateCreateFlags(),
+			static_cast<uint32_t>(dynamicStates.size()),
+			dynamicStates.data()
+		);
+
+		auto layoutCreateInfo = vk::PipelineLayoutCreateInfo(
+			vk::PipelineLayoutCreateFlags(),
+			0,
+			nullptr,
+			0,
+			nullptr
+		);
+
+		layout = device->createPipelineLayoutUnique(layoutCreateInfo);
+
+		vk::PipelineShaderStageCreateInfo shaderCreateInfos[] = {
+			vertShader->getCreateInfo(),
+			fragShader->getCreateInfo()
+		};
+
+		auto pipelineCreateInfo = vk::GraphicsPipelineCreateInfo(
+		    vk::PipelineCreateFlags(),
+		    2,
+		    shaderCreateInfos,
+		    &vertexInputStateCreateInfo,
+		    &inputAssemblyCreateInfo,
+		    nullptr,
+		    &viewportStateCreateInfo,
+		    &rasterizerCreateInfo,
+		    &multisamplingCreateInfo,
+		    nullptr,
+		    &colorBlendingCreateInfo,
+		    nullptr,
+		    *layout,
+		    *renderPass,
+		    0
+		);
+
+		pipeline = device->createGraphicsPipelineUnique(nullptr, pipelineCreateInfo);
+
+		delete (vertShader);
+		delete (fragShader);
+	}
+
+	void Swapchain::createRenderPass() {
+		auto colorAttachment = vk::AttachmentDescription(
+			vk::AttachmentDescriptionFlags(),
+			format,
+			vk::SampleCountFlagBits::e1,
+			vk::AttachmentLoadOp::eClear,
+			vk::AttachmentStoreOp::eStore,
+			vk::AttachmentLoadOp::eDontCare,
+			vk::AttachmentStoreOp::eDontCare,
+			vk::ImageLayout::eUndefined,
+			vk::ImageLayout::ePresentSrcKHR
+		);
+
+		auto colorAttachmentRef = vk::AttachmentReference(
+			0,
+			vk::ImageLayout::eColorAttachmentOptimal
+		);
+
+		auto subpassDescription = vk::SubpassDescription(
+			vk::SubpassDescriptionFlags(),
+		    vk::PipelineBindPoint::eGraphics,
+		    0,
+		    nullptr,
+		    1,
+		    &colorAttachmentRef
+		);
+
+		auto renderPassCreateInfo = vk::RenderPassCreateInfo(
+		    vk::RenderPassCreateFlags(),
+		    1,
+		    &colorAttachment,
+		    1,
+		    &subpassDescription
+		);
+
+		renderPass = device->createRenderPassUnique(renderPassCreateInfo);
 	}
 }
