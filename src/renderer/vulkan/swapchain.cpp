@@ -1,6 +1,7 @@
 #include "swapchain.hpp"
 #include "swapchain-support-details.hpp"
 #include "shader.hpp"
+#include "queue-family-indices.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 
@@ -8,26 +9,29 @@ namespace Obtain::Graphics::Vulkan {
 	 ***************** public *****************
 	 ******************************************/
 	Swapchain::Swapchain(
-			vk::UniqueInstance &instance,
-			vk::PhysicalDevice physicalDevice,
-			vk::UniqueDevice &device,
-			vk::SurfaceKHR surface,
-			std::array<uint32_t, 2> windowSize,
-			QueueFamilyIndices indices
+		vk::UniqueInstance &instance,
+		vk::PhysicalDevice physicalDevice,
+		vk::UniqueDevice &device,
+		vk::SurfaceKHR surface,
+		std::array<uint32_t, 2> windowSize,
+		QueueFamilyIndices indices
 	)
-			:
-			instance(instance), device(device) {
+		:
+		instance(instance),
+		device(device),
+		physicalDevice(physicalDevice),
+		surface(surface) {
 		SwapchainSupportDetails swapchainSupport = SwapchainSupportDetails::querySwapchainSupport(
-				physicalDevice,
-				surface
+			physicalDevice,
+			surface
 		);
 
 		vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapchainSupport.formats);
 		format = surfaceFormat.format;
 		vk::PresentModeKHR presentMode = chooseSwapPresentMode(swapchainSupport.presentModes);
 		extent = chooseSwapExtent(
-				swapchainSupport.capabilities,
-				windowSize
+			swapchainSupport.capabilities,
+			windowSize
 		);
 
 		uint32_t imageCount = swapchainSupport.capabilities
@@ -36,7 +40,7 @@ namespace Obtain::Graphics::Vulkan {
 		                    .maxImageCount > 0 &&
 		    imageCount > swapchainSupport.capabilities
 		                                 .maxImageCount
-				) {
+			) {
 			imageCount = swapchainSupport.capabilities
 			                             .maxImageCount;
 		}
@@ -54,7 +58,8 @@ namespace Obtain::Graphics::Vulkan {
 			pQueueFamilyIndices = nullptr;
 		}
 
-		vk::SwapchainCreateInfoKHR createInfo(
+		swapchain = device->createSwapchainKHRUnique(
+			vk::SwapchainCreateInfoKHR(
 				vk::SwapchainCreateFlagsKHR(),
 				surface,
 				imageCount,
@@ -72,34 +77,39 @@ namespace Obtain::Graphics::Vulkan {
 				presentMode,
 				true,
 				nullptr
+			)
 		);
-
-		swapchain = device->createSwapchainKHRUnique(createInfo);
 		images = device->getSwapchainImagesKHR(*swapchain);
 		imageViews.resize(images.size());
 
 		for (size_t i = 0; i < images.size(); i++) {
-			vk::ImageViewCreateInfo createInfo(
+			imageViews[i] = device->createImageView(
+				vk::ImageViewCreateInfo(
 					vk::ImageViewCreateFlags(),
 					images[i],
 					vk::ImageViewType::e2D,
 					format,
 					vk::ComponentMapping(
-							vk::ComponentSwizzle::eIdentity, // r
-							vk::ComponentSwizzle::eIdentity, // g
-							vk::ComponentSwizzle::eIdentity, // b
-							vk::ComponentSwizzle::eIdentity  // a
+						vk::ComponentSwizzle::eIdentity, // r
+						vk::ComponentSwizzle::eIdentity, // g
+						vk::ComponentSwizzle::eIdentity, // b
+						vk::ComponentSwizzle::eIdentity  // a
 					),
 					vk::ImageSubresourceRange(
-							vk::ImageAspectFlagBits::eColor,
-							0U, // base mip level
-							1U, // level count
-							0U, // base array level
-							1U  // layer count
+						vk::ImageAspectFlagBits::eColor,
+						0U, // base mip level
+						1U, // level count
+						0U, // base array level
+						1U  // layer count
 					)
+				)
 			);
-			imageViews[i] = device->createImageView(createInfo);
 		}
+		createRenderPass();
+		createPipeline();
+		createFramebuffers();
+		createCommandPool();
+		createCommandBuffers();
 	}
 
 	Swapchain::~Swapchain() {
@@ -108,15 +118,15 @@ namespace Obtain::Graphics::Vulkan {
 		}
 	}
 
-	vk::Extent2D Swapchain::getExtent() {
-		return extent;
+	void Swapchain::recreateSwapchain(Swapchain *swapchain) {
+
 	}
 
 	/******************************************
 	 ***************** private *****************
 	 ******************************************/
 	vk::SurfaceFormatKHR Swapchain::chooseSwapSurfaceFormat(
-			const std::vector<vk::SurfaceFormatKHR> &availableFormats
+		const std::vector<vk::SurfaceFormatKHR> &availableFormats
 	) {
 		if (availableFormats.size() == 1 && availableFormats[0].format == vk::Format::eUndefined) {
 			return {vk::Format::eB8G8R8A8Unorm, vk::ColorSpaceKHR::eSrgbNonlinear};
@@ -124,7 +134,7 @@ namespace Obtain::Graphics::Vulkan {
 		for (const auto &availableFormat : availableFormats) {
 			if (availableFormat.format == vk::Format::eB8G8R8A8Unorm &&
 			    availableFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear
-					) {
+				) {
 				return availableFormat;
 			}
 		}
@@ -133,7 +143,7 @@ namespace Obtain::Graphics::Vulkan {
 	}
 
 	vk::PresentModeKHR Swapchain::chooseSwapPresentMode(
-			const std::vector<vk::PresentModeKHR> availablePresentModes
+		const std::vector<vk::PresentModeKHR> availablePresentModes
 	) {
 		vk::PresentModeKHR best = vk::PresentModeKHR::eFifo;
 
@@ -149,8 +159,8 @@ namespace Obtain::Graphics::Vulkan {
 	}
 
 	vk::Extent2D Swapchain::chooseSwapExtent(
-			const vk::SurfaceCapabilitiesKHR &capabilities,
-			std::array<uint32_t, 2> windowSize
+		const vk::SurfaceCapabilitiesKHR &capabilities,
+		std::array<uint32_t, 2> windowSize
 	) {
 		if (capabilities.currentExtent
 		                .width != std::numeric_limits<uint32_t>::max()) {
@@ -159,23 +169,23 @@ namespace Obtain::Graphics::Vulkan {
 			vk::Extent2D actualExtent = {windowSize[0], windowSize[1]};
 
 			actualExtent.width = std::max(
-					capabilities.minImageExtent
+				capabilities.minImageExtent
+				            .width,
+				std::min(
+					capabilities.maxImageExtent
 					            .width,
-					std::min(
-							capabilities.maxImageExtent
-							            .width,
-							actualExtent.width
-					)
+					actualExtent.width
+				)
 			);
 
 			actualExtent.height = std::max(
-					capabilities.minImageExtent
+				capabilities.minImageExtent
+				            .height,
+				std::min(
+					capabilities.maxImageExtent
 					            .height,
-					std::min(
-							capabilities.maxImageExtent
-							            .height,
-							actualExtent.height
-					)
+					actualExtent.height
+				)
 			);
 
 			return actualExtent;
@@ -185,16 +195,16 @@ namespace Obtain::Graphics::Vulkan {
 	void Swapchain::createPipeline() {
 		Shader *vertShader = new Shader(
 			*device,
-			"basic.vert",
+			"assets/shaders/vert.spv",
 			vk::ShaderStageFlagBits::eVertex
 		);
 		Shader *fragShader = new Shader(
 			*device,
-			"basic.frag",
+			"assets/shaders/frag.spv",
 			vk::ShaderStageFlagBits::eFragment
 		);
 
-		auto vertexInputStateCreateInfo = vk::PipelineVertexInputStateCreateInfo(
+		vk::PipelineVertexInputStateCreateInfo vertexInputStateCreateInfo(
 			vk::PipelineVertexInputStateCreateFlags(),
 			0,
 			nullptr,
@@ -202,13 +212,13 @@ namespace Obtain::Graphics::Vulkan {
 			nullptr
 		);
 
-		auto inputAssemblyCreateInfo = vk::PipelineInputAssemblyStateCreateInfo(
+		vk::PipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo(
 			vk::PipelineInputAssemblyStateCreateFlags(),
 			vk::PrimitiveTopology::eTriangleList,
 			false
 		);
 
-		auto viewport = vk::Viewport(
+		vk::Viewport viewport(
 			0.0f,
 			0.0f,
 			(float) extent.width,
@@ -217,7 +227,7 @@ namespace Obtain::Graphics::Vulkan {
 			0.0f
 		);
 
-		auto scissor = vk::Rect2D(
+		vk::Rect2D scissor(
 			vk::Offset2D(
 				0,
 				0
@@ -225,7 +235,7 @@ namespace Obtain::Graphics::Vulkan {
 			extent
 		);
 
-		auto viewportStateCreateInfo = vk::PipelineViewportStateCreateInfo(
+		vk::PipelineViewportStateCreateInfo viewportStateCreateInfo(
 			vk::PipelineViewportStateCreateFlags(),
 			1,
 			&viewport,
@@ -233,7 +243,7 @@ namespace Obtain::Graphics::Vulkan {
 			&scissor
 		);
 
-		auto rasterizerCreateInfo = vk::PipelineRasterizationStateCreateInfo(
+		vk::PipelineRasterizationStateCreateInfo rasterizerCreateInfo(
 			vk::PipelineRasterizationStateCreateFlags(),
 			false,
 			false,
@@ -247,9 +257,13 @@ namespace Obtain::Graphics::Vulkan {
 			1.0f
 		);
 
-		auto multisamplingCreateInfo = vk::PipelineMultisampleStateCreateInfo(); // temporarily disabled
+		// temporarily disabled
+		vk::PipelineMultisampleStateCreateInfo multisamplingCreateInfo(
+			vk::PipelineMultisampleStateCreateFlags(),
+			vk::SampleCountFlagBits::e1
+		);
 
-		auto colorBlendAttachmentState = vk::PipelineColorBlendAttachmentState(
+		vk::PipelineColorBlendAttachmentState colorBlendAttachmentState(
 			false,
 			vk::BlendFactor::eOne,
 			vk::BlendFactor::eZero,
@@ -261,7 +275,7 @@ namespace Obtain::Graphics::Vulkan {
 			vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
 		);
 
-		auto colorBlendingCreateInfo = vk::PipelineColorBlendStateCreateInfo(
+		vk::PipelineColorBlendStateCreateInfo colorBlendingCreateInfo(
 			vk::PipelineColorBlendStateCreateFlags(),
 			false,
 			vk::LogicOp::eCopy,
@@ -274,53 +288,54 @@ namespace Obtain::Graphics::Vulkan {
 			vk::DynamicState::eLineWidth
 		};
 
-		auto dynamicStateCreateInfo = vk::PipelineDynamicStateCreateInfo(
+		vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo(
 			vk::PipelineDynamicStateCreateFlags(),
 			static_cast<uint32_t>(dynamicStates.size()),
 			dynamicStates.data()
 		);
 
-		auto layoutCreateInfo = vk::PipelineLayoutCreateInfo(
-			vk::PipelineLayoutCreateFlags(),
-			0,
-			nullptr,
-			0,
-			nullptr
+		layout = device->createPipelineLayoutUnique(
+			vk::PipelineLayoutCreateInfo(
+				vk::PipelineLayoutCreateFlags(),
+				0,
+				nullptr,
+				0,
+				nullptr
+			)
 		);
-
-		layout = device->createPipelineLayoutUnique(layoutCreateInfo);
 
 		vk::PipelineShaderStageCreateInfo shaderCreateInfos[] = {
 			vertShader->getCreateInfo(),
 			fragShader->getCreateInfo()
 		};
 
-		auto pipelineCreateInfo = vk::GraphicsPipelineCreateInfo(
-		    vk::PipelineCreateFlags(),
-		    2,
-		    shaderCreateInfos,
-		    &vertexInputStateCreateInfo,
-		    &inputAssemblyCreateInfo,
-		    nullptr,
-		    &viewportStateCreateInfo,
-		    &rasterizerCreateInfo,
-		    &multisamplingCreateInfo,
-		    nullptr,
-		    &colorBlendingCreateInfo,
-		    nullptr,
-		    *layout,
-		    *renderPass,
-		    0
+		pipeline = device->createGraphicsPipelineUnique(
+			nullptr,
+			vk::GraphicsPipelineCreateInfo(
+				vk::PipelineCreateFlags(),
+				2,
+				shaderCreateInfos,
+				&vertexInputStateCreateInfo,
+				&inputAssemblyCreateInfo,
+				nullptr,
+				&viewportStateCreateInfo,
+				&rasterizerCreateInfo,
+				&multisamplingCreateInfo,
+				nullptr,
+				&colorBlendingCreateInfo,
+				&dynamicStateCreateInfo,
+				*layout,
+				*renderPass,
+				0
+			)
 		);
-
-		pipeline = device->createGraphicsPipelineUnique(nullptr, pipelineCreateInfo);
 
 		delete (vertShader);
 		delete (fragShader);
 	}
 
 	void Swapchain::createRenderPass() {
-		auto colorAttachment = vk::AttachmentDescription(
+		vk::AttachmentDescription colorAttachment(
 			vk::AttachmentDescriptionFlags(),
 			format,
 			vk::SampleCountFlagBits::e1,
@@ -332,28 +347,107 @@ namespace Obtain::Graphics::Vulkan {
 			vk::ImageLayout::ePresentSrcKHR
 		);
 
-		auto colorAttachmentRef = vk::AttachmentReference(
+		vk::AttachmentReference colorAttachmentRef(
 			0,
 			vk::ImageLayout::eColorAttachmentOptimal
 		);
 
-		auto subpassDescription = vk::SubpassDescription(
+		vk::SubpassDescription subpassDescription(
 			vk::SubpassDescriptionFlags(),
-		    vk::PipelineBindPoint::eGraphics,
-		    0,
-		    nullptr,
-		    1,
-		    &colorAttachmentRef
+			vk::PipelineBindPoint::eGraphics,
+			0,
+			nullptr,
+			1,
+			&colorAttachmentRef
 		);
 
-		auto renderPassCreateInfo = vk::RenderPassCreateInfo(
-		    vk::RenderPassCreateFlags(),
-		    1,
-		    &colorAttachment,
-		    1,
-		    &subpassDescription
+		renderPass = device->createRenderPassUnique(
+			vk::RenderPassCreateInfo(
+				vk::RenderPassCreateFlags(),
+				1,
+				&colorAttachment,
+				1,
+				&subpassDescription
+			)
+		);
+	}
+
+	void Swapchain::createFramebuffers() {
+		size_t size = imageViews.size();
+
+		// Resize up front to avoid multiple resizings
+		framebuffers.resize(size);
+
+		for (size_t i = 0; i < size; i++) {
+			framebuffers[i] = device->createFramebufferUnique(
+				vk::FramebufferCreateInfo(
+					vk::FramebufferCreateFlags(),
+					*renderPass,
+					1,
+					&imageViews[i],
+					extent.width,
+					extent.height,
+					1
+				)
+			);
+		}
+	}
+
+	void Swapchain::createCommandPool() {
+		commandPool = device->createCommandPoolUnique(
+			vk::CommandPoolCreateInfo(
+				vk::CommandPoolCreateFlags(),
+				QueueFamilyIndices::findQueueFamilies(
+					physicalDevice,
+					surface
+				).graphicsFamily.value()
+			)
+		);
+	}
+
+	void Swapchain::createCommandBuffers() {
+		commandBuffers = device->allocateCommandBuffersUnique(
+			vk::CommandBufferAllocateInfo(
+				*commandPool,
+				vk::CommandBufferLevel::ePrimary,
+				(uint32_t) framebuffers.size()
+			)
 		);
 
-		renderPass = device->createRenderPassUnique(renderPassCreateInfo);
+		for (size_t i = 0; i < commandBuffers.size(); i++) {
+			auto &commandBuffer = commandBuffers[i];
+
+			commandBuffer->begin(
+				vk::CommandBufferBeginInfo(
+					vk::CommandBufferUsageFlagBits::eSimultaneousUse,
+					nullptr
+				)
+			);
+
+			vk::ClearValue clearColor(
+				vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f})
+			);
+
+
+
+			commandBuffer->beginRenderPass(
+				vk::RenderPassBeginInfo(
+					*renderPass,
+					*(framebuffers[i]),
+					vk::Rect2D(
+						{0, 0},
+						extent
+					),
+					1,
+					&clearColor
+				),
+				vk::SubpassContents::eInline
+			);
+
+			commandBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline);
+			commandBuffer->draw(3, 1, 0, 0);
+			commandBuffer->endRenderPass();
+			commandBuffer->end();
+		}
 	}
 }

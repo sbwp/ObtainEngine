@@ -22,8 +22,6 @@ namespace Obtain::Graphics::Vulkan {
 
 		static void recreateSwapchain(Swapchain *swapchain);
 
-		vk::Extent2D getExtent();
-
 	private:
 		vk::UniqueSwapchainKHR swapchain;
 		std::vector<vk::Image> images;
@@ -31,29 +29,38 @@ namespace Obtain::Graphics::Vulkan {
 		vk::Format format;
 		vk::Extent2D extent;
 
+		std::vector<vk::UniqueFramebuffer> framebuffers;
+
 		vk::UniqueInstance &instance;
 		vk::UniqueDevice &device;
+		vk::PhysicalDevice physicalDevice;
+		vk::SurfaceKHR surface;
 
 		vk::UniquePipelineLayout layout;
 		vk::UniquePipeline pipeline;
-
 		vk::UniqueRenderPass renderPass;
 
+		vk::UniqueCommandPool commandPool;
+		std::vector<vk::UniqueCommandBuffer> commandBuffers;
+
 		vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
-				const std::vector<vk::SurfaceFormatKHR> &availableFormats
+			const std::vector<vk::SurfaceFormatKHR> &availableFormats
 		);
 
 		vk::PresentModeKHR chooseSwapPresentMode(
-				const std::vector<vk::PresentModeKHR> availablePresentModes
+			const std::vector<vk::PresentModeKHR> availablePresentModes
 		);
 
 		vk::Extent2D chooseSwapExtent(
-				const vk::SurfaceCapabilitiesKHR &capabilities,
-				std::array<uint32_t, 2> windowSize
+			const vk::SurfaceCapabilitiesKHR &capabilities,
+			std::array<uint32_t, 2> windowSize
 		);
 
 		void createPipeline();
 		void createRenderPass();
+		void createFramebuffers();
+		void createCommandPool();
+		void createCommandBuffers();
 	};
 }
 

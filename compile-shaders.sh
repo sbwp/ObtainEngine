@@ -1,3 +1,7 @@
 #!/usr/bin/env bash
-glslangValidator -V src/renderer/shaders/basic.vert -o assets/shaders/vert.spv
-glslangValidator -V src/renderer/shaders/basic.frag -o assets/shaders/frag.spv
+if [[ ! -d build/assets/shaders ]]
+then
+    mkdir -p build/assets/shaders
+fi
+glslangValidator -V src/renderer/shaders/basic.vert -o build/assets/shaders/vert.spv
+glslangValidator -V src/renderer/shaders/basic.frag -o build/assets/shaders/frag.spv

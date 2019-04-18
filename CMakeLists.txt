@@ -10,13 +10,20 @@ include_directories(libs/headeronly)
 find_package(Vulkan REQUIRED)
 
 add_custom_command(
-        OUTPUT assets/shaders/frag.spv assets/shaders/vert.spv
-        DEPENDS src/renderer/shaders/basic.frag src/renderer/shaders/basic.vert
+        OUTPUT build/assets/shaders/frag.spv
+        DEPENDS src/renderer/shaders/basic.frag
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMAND ./compile-shaders.sh
 )
 
-add_custom_target(shaders ALL DEPENDS assets/shaders/frag.spv assets/shaders/vert.spv)
+add_custom_command(
+        OUTPUT build/assets/shaders/vert.spv
+        DEPENDS src/renderer/shaders/basic.vert
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMAND ./compile-shaders.sh
+)
+
+add_custom_target(shaders ALL DEPENDS build/assets/shaders/frag.spv build/assets/shaders/vert.spv)
 
 add_executable(obtain src/main.cpp
         src/renderer/renderer.cpp
@@ -42,6 +49,8 @@ add_executable(obtain src/main.cpp
         src/renderer/shaders/shader.frag
         src/renderer/shaders/shader.vert)
 
+
+add_dependencies(obtain shaders)
 
 target_link_libraries(obtain glfw ${GLFW_LIBRARIES})
 target_include_directories(obtain PRIVATE Vulkan::Vulkan)
