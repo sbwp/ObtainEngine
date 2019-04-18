@@ -32,16 +32,16 @@ namespace Obtain::Graphics::Vulkan {
 			throw std::runtime_error("Required Extensions not supported");
 		}
 
-		vk::InstanceCreateInfo createInfo(
+		return vk::createInstanceUnique(
+			vk::InstanceCreateInfo(
 				vk::InstanceCreateFlags(),
 				&appInfo,
 				useValidationLayers ? static_cast<uint32_t>(Validation::validationLayers.size()) : 0U,
 				useValidationLayers ? Validation::validationLayers.data() : nullptr,
 				static_cast<uint32_t>(requiredExtensions.size()),
 				requiredExtensions.data()
+			)
 		);
-
-		return vk::createInstanceUnique(createInfo);
 	}
 
 	/******************************************

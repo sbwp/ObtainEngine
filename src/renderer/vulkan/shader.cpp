@@ -10,14 +10,14 @@ namespace Obtain::Graphics::Vulkan {
 		stage = pipelineStage;
 		device = logicalDevice;
 
-		auto moduleCreateInfo = vk::ShaderModuleCreateInfo(
-				vk::ShaderModuleCreateFlags(),
-				code.size(),
-				reinterpret_cast<const uint32_t *>(code.data())
-		);
-
 		try {
-			module = device.createShaderModule(moduleCreateInfo);
+			module = device.createShaderModule(
+				vk::ShaderModuleCreateInfo(
+					vk::ShaderModuleCreateFlags(),
+					code.size(),
+					reinterpret_cast<const uint32_t *>(code.data())
+				)
+			);
 		} catch (std::exception const &e) {
 			std::cerr << "Failed to create shader module" << std::endl;
 			throw e;

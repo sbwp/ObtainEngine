@@ -76,7 +76,8 @@ namespace Obtain::Graphics::Vulkan {
 		vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
 		std::vector<const char *> validationLayers = Validation::getValidationLayers();
 
-		vk::DeviceCreateInfo createInfo(
+		return physicalDevice.createDeviceUnique(
+			vk::DeviceCreateInfo(
 				vk::DeviceCreateFlags(),
 				static_cast<uint32_t>(queueCreateInfos.size()),
 				queueCreateInfos.data(),
@@ -85,9 +86,8 @@ namespace Obtain::Graphics::Vulkan {
 				static_cast<uint32_t>(deviceExtensions.size()),
 				deviceExtensions.data(),
 				&deviceFeatures
+			)
 		);
-
-		return physicalDevice.createDeviceUnique(createInfo);
 	}
 
 	vk::UniqueSurfaceKHR Device::createSurface(const vk::Instance instance, GLFWwindow *window) {

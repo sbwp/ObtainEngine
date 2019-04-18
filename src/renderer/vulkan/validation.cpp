@@ -28,7 +28,8 @@ namespace Obtain::Graphics::Vulkan {
 			vk::UniqueInstance &instance,
 			vk::DispatchLoaderDynamic loader
 	) {
-		vk::DebugUtilsMessengerCreateInfoEXT createInfo(
+		return instance->createDebugUtilsMessengerEXT(
+			vk::DebugUtilsMessengerCreateInfoEXT(
 				vk::DebugUtilsMessengerCreateFlagsEXT(),
 				vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
 				vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
@@ -37,11 +38,9 @@ namespace Obtain::Graphics::Vulkan {
 				vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
 				vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
 				debugCallback
-		);
-		return instance->createDebugUtilsMessengerEXT(
-				createInfo,
-				nullptr,
-				loader
+			),
+			nullptr,
+			loader
 		);
 	}
 
