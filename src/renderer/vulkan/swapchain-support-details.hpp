@@ -13,15 +13,15 @@ namespace Obtain::Graphics::Vulkan {
 		std::vector<vk::SurfaceFormatKHR> formats;
 		std::vector<vk::PresentModeKHR> presentModes;
 
-		static SwapchainSupportDetails querySwapchainSupport(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
+		static SwapchainSupportDetails querySwapchainSupport(vk::PhysicalDevice device, vk::UniqueSurfaceKHR &surface) {
 			SwapchainSupportDetails details;
 
-			details.capabilities = device.getSurfaceCapabilitiesKHR(surface);
+			details.capabilities = device.getSurfaceCapabilitiesKHR(*surface);
 
 			// Check size of formats
-			details.formats = device.getSurfaceFormatsKHR(surface);
+			details.formats = device.getSurfaceFormatsKHR(*surface);
 
-			details.presentModes = device.getSurfacePresentModesKHR(surface);
+			details.presentModes = device.getSurfacePresentModesKHR(*surface);
 
 			return details;
 		}

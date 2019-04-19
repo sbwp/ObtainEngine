@@ -11,9 +11,9 @@ namespace Obtain::Graphics::Vulkan {
 	public:
 		Swapchain(
 				vk::UniqueInstance &instance,
-				vk::PhysicalDevice physicalDevice,
+				std::unique_ptr<vk::PhysicalDevice> &physicalDevice,
 				vk::UniqueDevice &device,
-				vk::SurfaceKHR surface,
+				vk::UniqueSurfaceKHR &surface,
 				std::array<uint32_t, 2> windowSize,
 				QueueFamilyIndices indices
 		);
@@ -21,6 +21,19 @@ namespace Obtain::Graphics::Vulkan {
 		~Swapchain();
 
 		static void recreateSwapchain(Swapchain *swapchain);
+
+		void submitFrame(
+			vk::Queue graphicsQueue,
+			vk::Queue presentationQueue
+		);
+
+		inline vk::UniqueSwapchainKHR &getSwapchain() {
+			return swapchain;
+		}
+
+		inline vk::UniqueCommandBuffer &getCommandBuffer(uint32_t i) {
+			return commandBuffers[i];
+		}
 
 	private:
 		vk::UniqueSwapchainKHR swapchain;
@@ -33,8 +46,8 @@ namespace Obtain::Graphics::Vulkan {
 
 		vk::UniqueInstance &instance;
 		vk::UniqueDevice &device;
-		vk::PhysicalDevice physicalDevice;
-		vk::SurfaceKHR surface;
+		std::unique_ptr<vk::PhysicalDevice> &physicalDevice;
+		vk::UniqueSurfaceKHR &surface;
 
 		vk::UniquePipelineLayout layout;
 		vk::UniquePipeline pipeline;
@@ -42,6 +55,9 @@ namespace Obtain::Graphics::Vulkan {
 
 		vk::UniqueCommandPool commandPool;
 		std::vector<vk::UniqueCommandBuffer> commandBuffers;
+
+		vk::UniqueSemaphore imageReady;
+		vk::UniqueSemaphore renderFinished;
 
 		vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
 			const std::vector<vk::SurfaceFormatKHR> &availableFormats

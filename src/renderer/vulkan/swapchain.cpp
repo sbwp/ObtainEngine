@@ -10,9 +10,9 @@ namespace Obtain::Graphics::Vulkan {
 	 ******************************************/
 	Swapchain::Swapchain(
 		vk::UniqueInstance &instance,
-		vk::PhysicalDevice physicalDevice,
+		std::unique_ptr<vk::PhysicalDevice> &physicalDevice,
 		vk::UniqueDevice &device,
-		vk::SurfaceKHR surface,
+		vk::UniqueSurfaceKHR &surface,
 		std::array<uint32_t, 2> windowSize,
 		QueueFamilyIndices indices
 	)
@@ -22,7 +22,7 @@ namespace Obtain::Graphics::Vulkan {
 		physicalDevice(physicalDevice),
 		surface(surface) {
 		SwapchainSupportDetails swapchainSupport = SwapchainSupportDetails::querySwapchainSupport(
-			physicalDevice,
+			*physicalDevice,
 			surface
 		);
 
@@ -61,7 +61,7 @@ namespace Obtain::Graphics::Vulkan {
 		swapchain = device->createSwapchainKHRUnique(
 			vk::SwapchainCreateInfoKHR(
 				vk::SwapchainCreateFlagsKHR(),
-				surface,
+				*surface,
 				imageCount,
 				format,
 				surfaceFormat.colorSpace,
@@ -110,6 +110,9 @@ namespace Obtain::Graphics::Vulkan {
 		createFramebuffers();
 		createCommandPool();
 		createCommandBuffers();
+
+		imageReady = device->createSemaphoreUnique(vk::SemaphoreCreateInfo());
+		renderFinished = device->createSemaphoreUnique(vk::SemaphoreCreateInfo());
 	}
 
 	Swapchain::~Swapchain() {
@@ -120,6 +123,42 @@ namespace Obtain::Graphics::Vulkan {
 
 	void Swapchain::recreateSwapchain(Swapchain *swapchain) {
 
+	}
+
+	void Swapchain::submitFrame(
+		vk::Queue graphicsQueue,
+		vk::Queue presentationQueue
+	) {
+		uint32_t imageIndex = device->acquireNextImageKHR(
+			*swapchain,
+			std::numeric_limits<uint64_t>::max(),
+			*imageReady,
+			nullptr
+		).value;
+
+		vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+		vk::SubmitInfo submitInfo(
+			1,
+			&imageReady.get(),
+			waitStages,
+			1,
+			&commandBuffers[imageIndex].get(),
+			1,
+			&renderFinished.get()
+		);
+
+		graphicsQueue.submit(1, &submitInfo, nullptr);
+
+		presentationQueue.presentKHR(
+			vk::PresentInfoKHR(
+				1,
+				&renderFinished.get(),
+				1,
+				&swapchain.get(),
+				&imageIndex,
+				nullptr
+			)
+		);
 	}
 
 	/******************************************
@@ -323,7 +362,7 @@ namespace Obtain::Graphics::Vulkan {
 				&multisamplingCreateInfo,
 				nullptr,
 				&colorBlendingCreateInfo,
-				&dynamicStateCreateInfo,
+				nullptr,
 				*layout,
 				*renderPass,
 				0
@@ -361,13 +400,25 @@ namespace Obtain::Graphics::Vulkan {
 			&colorAttachmentRef
 		);
 
+		vk::SubpassDependency dependency(
+			VK_SUBPASS_EXTERNAL,
+			0,
+			vk::PipelineStageFlagBits::eColorAttachmentOutput,
+			vk::PipelineStageFlagBits::eColorAttachmentOutput,
+			vk::AccessFlags(),
+			vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite,
+			vk::DependencyFlags()
+		);
+
 		renderPass = device->createRenderPassUnique(
 			vk::RenderPassCreateInfo(
 				vk::RenderPassCreateFlags(),
 				1,
 				&colorAttachment,
 				1,
-				&subpassDescription
+				&subpassDescription,
+				1,
+				&dependency
 			)
 		);
 	}
@@ -398,7 +449,7 @@ namespace Obtain::Graphics::Vulkan {
 			vk::CommandPoolCreateInfo(
 				vk::CommandPoolCreateFlags(),
 				QueueFamilyIndices::findQueueFamilies(
-					physicalDevice,
+					*physicalDevice,
 					surface
 				).graphicsFamily.value()
 			)

@@ -13,12 +13,12 @@ namespace Obtain::Graphics::Vulkan {
 	/******************************************
 	 ***************** public *****************
 	 ******************************************/
-	vk::PhysicalDevice Device::selectPhysicalDevice(
+	std::unique_ptr<vk::PhysicalDevice> Device::selectPhysicalDevice(
 			vk::UniqueInstance &instance,
 			vk::UniqueSurfaceKHR &surface
 	) {
 		std::vector<vk::PhysicalDevice> devices = instance->enumeratePhysicalDevices();
-		if (devices.size() == 0) {
+		if (devices.empty()) {
 			throw std::runtime_error("no supported GPUs found");
 		}
 
@@ -29,16 +29,14 @@ namespace Obtain::Graphics::Vulkan {
 					std::make_pair(
 							ratePhysicalDeviceSuitability(
 									device,
-									*surface
+									surface
 							),
 							device
 					));
 		}
 
-		if (deviceMap.rbegin()
-		             ->first > 0) {
-			return deviceMap.rbegin()
-			                ->second;
+		if (deviceMap.rbegin()->first > 0) {
+			return std::make_unique<vk::PhysicalDevice>(deviceMap.rbegin()->second);
 		} else {
 			throw std::runtime_error("no suitable GPUs found");
 		}
@@ -46,12 +44,12 @@ namespace Obtain::Graphics::Vulkan {
 
 	vk::UniqueDevice Device::createLogicalDevice(
 			vk::UniqueInstance &instance,
-			vk::PhysicalDevice physicalDevice,
+			std::unique_ptr<vk::PhysicalDevice> &physicalDevice,
 			vk::UniqueSurfaceKHR &surface
 	) {
 		QueueFamilyIndices indices = QueueFamilyIndices::findQueueFamilies(
-				physicalDevice,
-				*surface
+				*physicalDevice,
+				surface
 		);
 		const float queuePriority = 1.0f;
 		std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
@@ -76,7 +74,7 @@ namespace Obtain::Graphics::Vulkan {
 		vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
 		std::vector<const char *> validationLayers = Validation::getValidationLayers();
 
-		return physicalDevice.createDeviceUnique(
+		return physicalDevice->createDeviceUnique(
 			vk::DeviceCreateInfo(
 				vk::DeviceCreateFlags(),
 				static_cast<uint32_t>(queueCreateInfos.size()),
@@ -115,7 +113,7 @@ namespace Obtain::Graphics::Vulkan {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME
 	};
 
-	uint32_t Device::ratePhysicalDeviceSuitability(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
+	uint32_t Device::ratePhysicalDeviceSuitability(vk::PhysicalDevice device, vk::UniqueSurfaceKHR &surface) {
 		// Get device properties
 		auto deviceProperties = device.getProperties();
 
