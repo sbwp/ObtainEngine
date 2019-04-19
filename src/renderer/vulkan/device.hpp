@@ -9,14 +9,14 @@
 namespace Obtain::Graphics::Vulkan {
 	class Device {
 	public:
-		static vk::PhysicalDevice selectPhysicalDevice(
+		static std::unique_ptr<vk::PhysicalDevice> selectPhysicalDevice(
 				vk::UniqueInstance &instance,
 				vk::UniqueSurfaceKHR &surface
 		);
 
 		static vk::UniqueDevice createLogicalDevice(
 				vk::UniqueInstance &instance,
-				vk::PhysicalDevice physicalDevice,
+				std::unique_ptr<vk::PhysicalDevice> &physicalDevice,
 				vk::UniqueSurfaceKHR &surface
 		);
 
@@ -25,7 +25,7 @@ namespace Obtain::Graphics::Vulkan {
 	private:
 		static const std::vector<const char *> deviceExtensions;
 
-		static uint32_t ratePhysicalDeviceSuitability(vk::PhysicalDevice device, vk::SurfaceKHR surface);
+		static uint32_t ratePhysicalDeviceSuitability(vk::PhysicalDevice device, vk::UniqueSurfaceKHR &surface);
 
 		static bool checkDeviceExtensionSupport(vk::PhysicalDevice device);
 

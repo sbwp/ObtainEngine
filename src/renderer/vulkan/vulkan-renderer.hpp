@@ -35,7 +35,7 @@ namespace Obtain::Graphics::Vulkan {
 		vk::DebugUtilsMessengerEXT debugMessenger;
 
 		vk::UniqueSurfaceKHR surface;
-		vk::PhysicalDevice physicalDevice;
+		std::unique_ptr<vk::PhysicalDevice> physicalDevice;
 		vk::UniqueDevice device;
 
 		vk::Queue graphicsQueue;
@@ -43,9 +43,8 @@ namespace Obtain::Graphics::Vulkan {
 
 		Swapchain *swapchain;
 
-		vk::Pipeline pipeline;
-
 		void initWindow();
+		void drawFrame();
 	};
 }
 
