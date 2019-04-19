@@ -16,7 +16,8 @@ namespace Obtain::Graphics::Vulkan {
 				vk::UniqueSurfaceKHR &surface,
 				std::array<uint32_t, 2> windowSize,
 				QueueFamilyIndices indices,
-				vk::UniqueCommandPool &commandPool
+				vk::UniqueCommandPool &commandPool,
+				vk::UniqueBuffer &vertexBuffer
 		);
 
 		~Swapchain();
@@ -54,6 +55,7 @@ namespace Obtain::Graphics::Vulkan {
 
 		vk::UniqueCommandPool &commandPool;
 		std::vector<vk::UniqueCommandBuffer> commandBuffers;
+		vk::UniqueBuffer &vertexBuffer;
 
 		static const int MaxFramesInFlight = 2;
 		std::array<vk::UniqueSemaphore, MaxFramesInFlight> imageReady;

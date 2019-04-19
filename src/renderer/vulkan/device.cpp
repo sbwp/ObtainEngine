@@ -105,6 +105,23 @@ namespace Obtain::Graphics::Vulkan {
 		);
 	}
 
+	uint32_t Device::findMemoryType(
+		vk::PhysicalDevice physicalDevice,
+		uint32_t typeFilter,
+		vk::MemoryPropertyFlags properties
+	) {
+		auto memoryProperties = physicalDevice.getMemoryProperties();
+
+		for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+			if ((typeFilter & (1u << i)) &&
+				memoryProperties.memoryTypes[i].propertyFlags.operator&(properties) == properties
+			) {
+				return i;
+			}
+		}
+		throw std::runtime_error("failed to find suitable memory type!");
+	}
+
 	/******************************************
 	 ***************** private *****************
 	 ******************************************/

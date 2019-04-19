@@ -2,6 +2,7 @@
 #include "swapchain-support-details.hpp"
 #include "shader.hpp"
 #include "queue-family-indices.hpp"
+#include "vertex2d.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 
@@ -15,14 +16,16 @@ namespace Obtain::Graphics::Vulkan {
 		vk::UniqueSurfaceKHR &surface,
 		std::array<uint32_t, 2> windowSize,
 		QueueFamilyIndices indices,
-		vk::UniqueCommandPool &commandPool
+		vk::UniqueCommandPool &commandPool,
+		vk::UniqueBuffer &vertexBuffer
 	)
 		:
 		instance(instance),
 		device(device),
 		physicalDevice(physicalDevice),
 		surface(surface),
-		commandPool(commandPool) {
+		commandPool(commandPool),
+		vertexBuffer(vertexBuffer) {
 		SwapchainSupportDetails swapchainSupport = SwapchainSupportDetails::querySwapchainSupport(
 			*physicalDevice,
 			surface
@@ -178,7 +181,7 @@ namespace Obtain::Graphics::Vulkan {
 					nullptr
 				)
 			);
-		} catch (vk::OutOfDateKHRError) {
+		} catch (vk::OutOfDateKHRError &error) {
 			currentFrame = (currentFrame + 1) % MaxFramesInFlight;
 			return false;
 		}
@@ -268,12 +271,15 @@ namespace Obtain::Graphics::Vulkan {
 			vk::ShaderStageFlagBits::eFragment
 		);
 
+		auto bindingDescription = Vertex2D::getBindingDescription();
+		auto attributeDescriptions = Vertex2D::getAttributeDescriptions();
+
 		vk::PipelineVertexInputStateCreateInfo vertexInputStateCreateInfo(
 			vk::PipelineVertexInputStateCreateFlags(),
-			0,
-			nullptr,
-			0,
-			nullptr
+			1,
+			&bindingDescription,
+			static_cast<uint32_t>(attributeDescriptions.size()),
+			attributeDescriptions.data()
 		);
 
 		vk::PipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo(
@@ -492,8 +498,6 @@ namespace Obtain::Graphics::Vulkan {
 				vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f})
 			);
 
-
-
 			commandBuffer->beginRenderPass(
 				vk::RenderPassBeginInfo(
 					*renderPass,
@@ -509,6 +513,9 @@ namespace Obtain::Graphics::Vulkan {
 			);
 
 			commandBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline);
+			vk::Buffer vertexBuffers[] = {*vertexBuffer};
+			vk::DeviceSize offsets[] = {0};
+			commandBuffer->bindVertexBuffers(0, 1, vertexBuffers, offsets);
 			commandBuffer->draw(3, 1, 0, 0);
 			commandBuffer->endRenderPass();
 			commandBuffer->end();
