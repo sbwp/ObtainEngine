@@ -19,7 +19,8 @@ namespace Obtain::Graphics::Vulkan {
 	)
 		:
 		gameVersion(gameVersion),
-		gameTitle(gameTitle) {
+		gameTitle(gameTitle),
+		resizeOccurred(false) {
 
 		windowSize = {1600, 900};
 		initWindow();
@@ -49,7 +50,7 @@ namespace Obtain::Graphics::Vulkan {
 			surface
 		);
 
-		QueueFamilyIndices indices = QueueFamilyIndices::findQueueFamilies(
+		indices = QueueFamilyIndices::findQueueFamilies(
 			*physicalDevice,
 			surface
 		);
@@ -62,13 +63,16 @@ namespace Obtain::Graphics::Vulkan {
 			0
 		);
 
+		createCommandPool();
+
 		swapchain = new Swapchain(
 			instance,
 			physicalDevice,
 			device,
 			surface,
 			windowSize,
-			indices
+			indices,
+			commandPool
 		);
 
 	}
@@ -88,7 +92,10 @@ namespace Obtain::Graphics::Vulkan {
 		while (!glfwWindowShouldClose(window)) {
 			glfwPollEvents();
 			drawFrame();
-			swapchain->submitFrame(graphicsQueue, presentationQueue);
+			bool drawSuccess = swapchain->submitFrame(graphicsQueue, presentationQueue);
+			if (resizeOccurred || !drawSuccess) {
+				updateWindowSize();
+			}
 		}
 
 		device->waitIdle();
@@ -97,6 +104,11 @@ namespace Obtain::Graphics::Vulkan {
 	/******************************************
 	 ***************** private *****************
 	 ******************************************/
+	void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+		auto p_resizeOccurred = reinterpret_cast<bool*>(glfwGetWindowUserPointer(window));
+		*p_resizeOccurred = true;
+	}
+
 	void VulkanRenderer::initWindow() {
 		glfwInit();
 		glfwWindowHint(
@@ -105,7 +117,7 @@ namespace Obtain::Graphics::Vulkan {
 		); // Don't create OpenGL context
 		glfwWindowHint(
 				GLFW_RESIZABLE,
-				false
+				true
 		); // Temp: make window not resizable
 		window = glfwCreateWindow(
 				windowSize[0],
@@ -114,9 +126,45 @@ namespace Obtain::Graphics::Vulkan {
 				nullptr,
 				nullptr
 		);
+		glfwSetWindowUserPointer(window, &resizeOccurred);
+
+		glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 	}
 
 	void VulkanRenderer::drawFrame() {
 
+	}
+
+	void VulkanRenderer::createCommandPool() {
+		commandPool = device->createCommandPoolUnique(
+			vk::CommandPoolCreateInfo(
+				vk::CommandPoolCreateFlags(),
+				QueueFamilyIndices::findQueueFamilies(
+					*physicalDevice,
+					surface
+				).graphicsFamily.value()
+			)
+		);
+	}
+
+	void VulkanRenderer::updateWindowSize() {
+		int width = 0, height = 0;
+		while (width == 0 || height == 0) {
+			glfwGetFramebufferSize(window, &width, &height);
+			glfwWaitEvents();
+		}
+		windowSize = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+
+		delete(swapchain);
+		swapchain = new Swapchain(
+			instance,
+			physicalDevice,
+			device,
+			surface,
+			windowSize,
+			indices,
+			commandPool
+		);
+		resizeOccurred = false;
 	}
 }
