@@ -15,14 +15,13 @@ namespace Obtain::Graphics::Vulkan {
 				vk::UniqueDevice &device,
 				vk::UniqueSurfaceKHR &surface,
 				std::array<uint32_t, 2> windowSize,
-				QueueFamilyIndices indices
+				QueueFamilyIndices indices,
+				vk::UniqueCommandPool &commandPool
 		);
 
 		~Swapchain();
 
-		static void recreateSwapchain(Swapchain *swapchain);
-
-		void submitFrame(
+		bool submitFrame(
 			vk::Queue graphicsQueue,
 			vk::Queue presentationQueue
 		);
@@ -53,21 +52,24 @@ namespace Obtain::Graphics::Vulkan {
 		vk::UniquePipeline pipeline;
 		vk::UniqueRenderPass renderPass;
 
-		vk::UniqueCommandPool commandPool;
+		vk::UniqueCommandPool &commandPool;
 		std::vector<vk::UniqueCommandBuffer> commandBuffers;
 
-		vk::UniqueSemaphore imageReady;
-		vk::UniqueSemaphore renderFinished;
+		static const int MaxFramesInFlight = 2;
+		std::array<vk::UniqueSemaphore, MaxFramesInFlight> imageReady;
+		std::array<vk::UniqueSemaphore, MaxFramesInFlight> renderFinished;
+		std::array<vk::UniqueFence, MaxFramesInFlight> outOfFlight;
+		size_t currentFrame = 0;
 
-		vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
+		static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
 			const std::vector<vk::SurfaceFormatKHR> &availableFormats
 		);
 
-		vk::PresentModeKHR chooseSwapPresentMode(
-			const std::vector<vk::PresentModeKHR> availablePresentModes
+		static vk::PresentModeKHR chooseSwapPresentMode(
+			const std::vector<vk::PresentModeKHR> &availablePresentModes
 		);
 
-		vk::Extent2D chooseSwapExtent(
+		static vk::Extent2D chooseSwapExtent(
 			const vk::SurfaceCapabilitiesKHR &capabilities,
 			std::array<uint32_t, 2> windowSize
 		);
@@ -75,7 +77,6 @@ namespace Obtain::Graphics::Vulkan {
 		void createPipeline();
 		void createRenderPass();
 		void createFramebuffers();
-		void createCommandPool();
 		void createCommandBuffers();
 	};
 }

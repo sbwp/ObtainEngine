@@ -14,13 +14,15 @@ namespace Obtain::Graphics::Vulkan {
 		vk::UniqueDevice &device,
 		vk::UniqueSurfaceKHR &surface,
 		std::array<uint32_t, 2> windowSize,
-		QueueFamilyIndices indices
+		QueueFamilyIndices indices,
+		vk::UniqueCommandPool &commandPool
 	)
 		:
 		instance(instance),
 		device(device),
 		physicalDevice(physicalDevice),
-		surface(surface) {
+		surface(surface),
+		commandPool(commandPool) {
 		SwapchainSupportDetails swapchainSupport = SwapchainSupportDetails::querySwapchainSupport(
 			*physicalDevice,
 			surface
@@ -108,57 +110,81 @@ namespace Obtain::Graphics::Vulkan {
 		createRenderPass();
 		createPipeline();
 		createFramebuffers();
-		createCommandPool();
 		createCommandBuffers();
 
-		imageReady = device->createSemaphoreUnique(vk::SemaphoreCreateInfo());
-		renderFinished = device->createSemaphoreUnique(vk::SemaphoreCreateInfo());
+		for (size_t i = 0; i < MaxFramesInFlight; i++) {
+			imageReady[i] = device->createSemaphoreUnique(vk::SemaphoreCreateInfo());
+			renderFinished[i] = device->createSemaphoreUnique(vk::SemaphoreCreateInfo());
+			outOfFlight[i] = device->createFenceUnique(
+				vk::FenceCreateInfo(
+					vk::FenceCreateFlagBits::eSignaled
+				)
+			);
+		}
 	}
 
 	Swapchain::~Swapchain() {
+		device->waitIdle();
 		for (auto imageView : imageViews) {
 			device->destroyImageView(imageView);
 		}
 	}
 
-	void Swapchain::recreateSwapchain(Swapchain *swapchain) {
-
-	}
-
-	void Swapchain::submitFrame(
+	bool Swapchain::submitFrame(
 		vk::Queue graphicsQueue,
 		vk::Queue presentationQueue
 	) {
-		uint32_t imageIndex = device->acquireNextImageKHR(
-			*swapchain,
-			std::numeric_limits<uint64_t>::max(),
-			*imageReady,
-			nullptr
-		).value;
+		device->waitForFences(
+			1,
+			&outOfFlight[currentFrame].get(),
+			true,
+			std::numeric_limits<uint64_t>::max()
+		);
+		device->resetFences(1, &outOfFlight[currentFrame].get());
+		uint32_t imageIndex;
+		try {
+			imageIndex = device->acquireNextImageKHR(
+				*swapchain,
+				std::numeric_limits<uint64_t>::max(),
+				*imageReady[currentFrame],
+				nullptr
+			).value;
+		} catch (vk::OutOfDateKHRError &error) {
+			return false;
+		}
 
 		vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
 		vk::SubmitInfo submitInfo(
 			1,
-			&imageReady.get(),
+			&imageReady[currentFrame].get(),
 			waitStages,
 			1,
 			&commandBuffers[imageIndex].get(),
 			1,
-			&renderFinished.get()
+			&renderFinished[currentFrame].get()
 		);
 
-		graphicsQueue.submit(1, &submitInfo, nullptr);
+		graphicsQueue.submit(1, &submitInfo, *outOfFlight[currentFrame]);
 
-		presentationQueue.presentKHR(
-			vk::PresentInfoKHR(
-				1,
-				&renderFinished.get(),
-				1,
-				&swapchain.get(),
-				&imageIndex,
-				nullptr
-			)
-		);
+		vk::Result result;
+		try {
+			result = presentationQueue.presentKHR(
+				vk::PresentInfoKHR(
+					1,
+					&renderFinished[currentFrame].get(),
+					1,
+					&swapchain.get(),
+					&imageIndex,
+					nullptr
+				)
+			);
+		} catch (vk::OutOfDateKHRError) {
+			currentFrame = (currentFrame + 1) % MaxFramesInFlight;
+			return false;
+		}
+
+		currentFrame = (currentFrame + 1) % MaxFramesInFlight;
+		return result == vk::Result::eSuccess;
 	}
 
 	/******************************************
@@ -182,7 +208,7 @@ namespace Obtain::Graphics::Vulkan {
 	}
 
 	vk::PresentModeKHR Swapchain::chooseSwapPresentMode(
-		const std::vector<vk::PresentModeKHR> availablePresentModes
+		const std::vector<vk::PresentModeKHR> &availablePresentModes
 	) {
 		vk::PresentModeKHR best = vk::PresentModeKHR::eFifo;
 
@@ -201,8 +227,7 @@ namespace Obtain::Graphics::Vulkan {
 		const vk::SurfaceCapabilitiesKHR &capabilities,
 		std::array<uint32_t, 2> windowSize
 	) {
-		if (capabilities.currentExtent
-		                .width != std::numeric_limits<uint32_t>::max()) {
+		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 			return capabilities.currentExtent;
 		} else {
 			vk::Extent2D actualExtent = {windowSize[0], windowSize[1]};
@@ -442,18 +467,6 @@ namespace Obtain::Graphics::Vulkan {
 				)
 			);
 		}
-	}
-
-	void Swapchain::createCommandPool() {
-		commandPool = device->createCommandPoolUnique(
-			vk::CommandPoolCreateInfo(
-				vk::CommandPoolCreateFlags(),
-				QueueFamilyIndices::findQueueFamilies(
-					*physicalDevice,
-					surface
-				).graphicsFamily.value()
-			)
-		);
 	}
 
 	void Swapchain::createCommandBuffers() {

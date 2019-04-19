@@ -27,9 +27,11 @@ namespace Obtain::Graphics::Vulkan {
 		std::array<uint32_t, 3> gameVersion;
 		std::array<uint32_t, 3> engineVersion;
 		std::array<u_int32_t, 2> windowSize;
+		bool resizeOccurred;
 
 		GLFWwindow *window;
 		vk::UniqueInstance instance;
+		QueueFamilyIndices indices;
 
 		vk::DispatchLoaderDynamic loader;
 		vk::DebugUtilsMessengerEXT debugMessenger;
@@ -42,9 +44,12 @@ namespace Obtain::Graphics::Vulkan {
 		vk::Queue presentationQueue;
 
 		Swapchain *swapchain;
+		vk::UniqueCommandPool commandPool;
 
 		void initWindow();
 		void drawFrame();
+		void createCommandPool();
+		void updateWindowSize();
 	};
 }
 
