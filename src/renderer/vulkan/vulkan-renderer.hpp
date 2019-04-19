@@ -8,6 +8,7 @@
 
 #include "../renderer.hpp"
 #include "swapchain.hpp"
+#include "object.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 	class VulkanRenderer : public Renderer {
@@ -28,6 +29,7 @@ namespace Obtain::Graphics::Vulkan {
 		std::array<uint32_t, 3> engineVersion;
 		std::array<u_int32_t, 2> windowSize;
 		bool resizeOccurred;
+		Object obj = Object(); // TODO: Replace with actual vertices
 
 		GLFWwindow *window;
 		vk::UniqueInstance instance;
@@ -46,10 +48,14 @@ namespace Obtain::Graphics::Vulkan {
 		Swapchain *swapchain;
 		vk::UniqueCommandPool commandPool;
 
+		vk::UniqueBuffer vertexBuffer;
+		vk::UniqueDeviceMemory vertexBufferMemory;
+
 		void initWindow();
 		void drawFrame();
 		void createCommandPool();
 		void updateWindowSize();
+		void bindVertices();
 	};
 }
 

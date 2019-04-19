@@ -65,6 +65,8 @@ namespace Obtain::Graphics::Vulkan {
 
 		createCommandPool();
 
+		bindVertices();
+
 		swapchain = new Swapchain(
 			instance,
 			physicalDevice,
@@ -72,7 +74,8 @@ namespace Obtain::Graphics::Vulkan {
 			surface,
 			windowSize,
 			indices,
-			commandPool
+			commandPool,
+			vertexBuffer
 		);
 
 	}
@@ -163,8 +166,50 @@ namespace Obtain::Graphics::Vulkan {
 			surface,
 			windowSize,
 			indices,
-			commandPool
+			commandPool,
+			vertexBuffer
 		);
 		resizeOccurred = false;
+	}
+
+	void VulkanRenderer::bindVertices() {
+		vertexBuffer = device->createBufferUnique(
+			vk::BufferCreateInfo(
+				vk::BufferCreateFlags(),
+				obj.getBufferSize(),
+				vk::BufferUsageFlagBits::eVertexBuffer,
+				vk::SharingMode::eExclusive
+			)
+		);
+
+		vk::MemoryRequirements memoryRequirements = device->getBufferMemoryRequirements(*vertexBuffer);
+		uint32_t index = Device::findMemoryType(
+			*physicalDevice,
+			memoryRequirements.memoryTypeBits,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+		);
+
+		vertexBufferMemory = device->allocateMemoryUnique(
+			vk::MemoryAllocateInfo(
+				memoryRequirements.size,
+				index
+			)
+		);
+
+		device->bindBufferMemory(
+			*vertexBuffer,
+			*vertexBufferMemory,
+			static_cast<vk::DeviceSize>(0)
+		);
+
+		void* data = device->mapMemory(
+			*vertexBufferMemory,
+			static_cast<vk::DeviceSize>(0),
+			static_cast<vk::DeviceSize>(obj.getBufferSize())
+		);
+
+		memcpy(data, obj.getVertices().data(), static_cast<size_t>(obj.getBufferSize()));
+
+		device->unmapMemory(*vertexBufferMemory);
 	}
 }

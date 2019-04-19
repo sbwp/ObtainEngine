@@ -22,6 +22,8 @@ namespace Obtain::Graphics::Vulkan {
 
 		static vk::UniqueSurfaceKHR createSurface(const vk::Instance instance, GLFWwindow *window);
 
+		static uint32_t findMemoryType(vk::PhysicalDevice physicalDevice, uint32_t typeFilter, vk::MemoryPropertyFlags properties);
+
 	private:
 		static const std::vector<const char *> deviceExtensions;
 
