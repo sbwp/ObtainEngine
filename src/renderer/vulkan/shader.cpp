@@ -1,21 +1,20 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+#include <iosfwd>
 
 #include "shader.hpp"
 
 namespace Obtain::Graphics::Vulkan {
-	Shader::Shader(vk::Device logicalDevice, std::string filename, vk::ShaderStageFlagBits pipelineStage) {
-		code = readFile(filename);
-		stage = pipelineStage;
-		device = logicalDevice;
-
+	Shader::Shader(vk::UniqueDevice &device, std::string filename, vk::ShaderStageFlagBits pipelineStage)
+		: device(device), stage(pipelineStage), code(readFile(filename))
+	{
 		try {
-			module = device.createShaderModule(
+			module = device->createShaderModule(
 				vk::ShaderModuleCreateInfo(
 					vk::ShaderModuleCreateFlags(),
 					code.size(),
-					reinterpret_cast<const uint32_t *>(code.data())
+					reinterpret_cast<uint32_t *>(code.data())
 				)
 			);
 		} catch (std::exception const &e) {
@@ -24,25 +23,27 @@ namespace Obtain::Graphics::Vulkan {
 		}
 
 		createInfo = vk::PipelineShaderStageCreateInfo(
-				vk::PipelineShaderStageCreateFlags(),
-				stage,
-				module,
-				"main",
-				nullptr
+			vk::PipelineShaderStageCreateFlags(),
+			stage,
+			module,
+			"main",
+			nullptr
 		);
 	}
 
-	Shader::~Shader() {
-		device.destroyShaderModule(
-				module,
-				nullptr
+	Shader::~Shader()
+	{
+		device->destroyShaderModule(
+			module,
+			nullptr
 		);
 	}
 
-	std::vector<char> Shader::readFile(const std::string &filename) {
+	std::vector<char> Shader::readFile(const std::string &filename)
+	{
 		std::ifstream file(
-				filename,
-				std::ios::ate | std::ios::binary
+			filename,
+			std::ios::ate | std::ios::binary
 		);
 
 		if (!file.is_open()) {
@@ -54,8 +55,8 @@ namespace Obtain::Graphics::Vulkan {
 
 		file.seekg(0);
 		file.read(
-				buffer.data(),
-				fileSize
+			buffer.data(),
+			static_cast<std::streamsize>(fileSize)
 		);
 		file.close();
 

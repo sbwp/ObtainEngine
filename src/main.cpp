@@ -7,11 +7,12 @@ const std::string gameTitle = "The Game 2: Return of the Game";
 const std::array<uint32_t, 3> gameVersion = {0, 0, 1};
 const std::array<uint32_t, 3> engineVersion = {0, 0, 1};
 
-int main() {
+int main()
+{
 	auto renderer = new Obtain::Graphics::Vulkan::VulkanRenderer(
-			gameTitle,
-			gameVersion,
-			engineVersion
+		gameTitle,
+		gameVersion,
+		engineVersion
 	);
 
 	try {

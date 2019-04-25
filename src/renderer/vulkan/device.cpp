@@ -14,9 +14,10 @@ namespace Obtain::Graphics::Vulkan {
 	 ***************** public *****************
 	 ******************************************/
 	std::unique_ptr<vk::PhysicalDevice> Device::selectPhysicalDevice(
-			vk::UniqueInstance &instance,
-			vk::UniqueSurfaceKHR &surface
-	) {
+		vk::UniqueInstance &instance,
+		vk::UniqueSurfaceKHR &surface
+	)
+	{
 		std::vector<vk::PhysicalDevice> devices = instance->enumeratePhysicalDevices();
 		if (devices.empty()) {
 			throw std::runtime_error("no supported GPUs found");
@@ -26,13 +27,13 @@ namespace Obtain::Graphics::Vulkan {
 
 		for (const auto &device : devices) {
 			deviceMap.insert(
-					std::make_pair(
-							ratePhysicalDeviceSuitability(
-									device,
-									surface
-							),
-							device
-					));
+				std::make_pair(
+					ratePhysicalDeviceSuitability(
+						device,
+						surface
+					),
+					device
+				));
 		}
 
 		if (deviceMap.rbegin()->first > 0) {
@@ -43,31 +44,32 @@ namespace Obtain::Graphics::Vulkan {
 	}
 
 	vk::UniqueDevice Device::createLogicalDevice(
-			vk::UniqueInstance &instance,
-			std::unique_ptr<vk::PhysicalDevice> &physicalDevice,
-			vk::UniqueSurfaceKHR &surface
-	) {
+		vk::UniqueInstance &instance,
+		std::unique_ptr<vk::PhysicalDevice> &physicalDevice,
+		vk::UniqueSurfaceKHR &surface
+	)
+	{
 		QueueFamilyIndices indices = QueueFamilyIndices::findQueueFamilies(
-				*physicalDevice,
-				surface
+			*physicalDevice,
+			surface
 		);
 		const float queuePriority = 1.0f;
 		std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
 		std::set<uint32_t> uniqueQueueFamilies = {
-				indices.graphicsFamily
-				       .value(),
-				indices.presentFamily
-				       .value()
+			indices.graphicsFamily
+				.value(),
+			indices.presentFamily
+				.value()
 		};
 
 		for (uint32_t queueFamily : uniqueQueueFamilies) {
 			queueCreateInfos.push_back(
-					vk::DeviceQueueCreateInfo(
-							vk::DeviceQueueCreateFlags(),
-							queueFamily,
-							1U,
-							&queuePriority
-					)
+				vk::DeviceQueueCreateInfo(
+					vk::DeviceQueueCreateFlags(),
+					queueFamily,
+					1U,
+					&queuePriority
+				)
 			);
 		}
 
@@ -88,20 +90,21 @@ namespace Obtain::Graphics::Vulkan {
 		);
 	}
 
-	vk::UniqueSurfaceKHR Device::createSurface(const vk::Instance instance, GLFWwindow *window) {
+	vk::UniqueSurfaceKHR Device::createSurface(const vk::Instance instance, GLFWwindow *window)
+	{
 		VkSurfaceKHR surface;
 
 		if (glfwCreateWindowSurface(
-				instance,
-				window,
-				nullptr,
-				&surface
+			instance,
+			window,
+			nullptr,
+			&surface
 		) != VK_SUCCESS) {
 			throw std::runtime_error("could not create surface");
 		}
 		return vk::UniqueSurfaceKHR(
-				surface,
-				instance
+			surface,
+			instance
 		);
 	}
 
@@ -109,13 +112,14 @@ namespace Obtain::Graphics::Vulkan {
 		vk::PhysicalDevice physicalDevice,
 		uint32_t typeFilter,
 		vk::MemoryPropertyFlags properties
-	) {
+	)
+	{
 		auto memoryProperties = physicalDevice.getMemoryProperties();
 
 		for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
 			if ((typeFilter & (1u << i)) &&
-				memoryProperties.memoryTypes[i].propertyFlags.operator&(properties) == properties
-			) {
+			    memoryProperties.memoryTypes[i].propertyFlags.operator&(properties) == properties
+				) {
 				return i;
 			}
 		}
@@ -127,10 +131,11 @@ namespace Obtain::Graphics::Vulkan {
 	 ******************************************/
 
 	const std::vector<const char *> Device::deviceExtensions = {
-			VK_KHR_SWAPCHAIN_EXTENSION_NAME
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 	};
 
-	uint32_t Device::ratePhysicalDeviceSuitability(vk::PhysicalDevice device, vk::UniqueSurfaceKHR &surface) {
+	uint32_t Device::ratePhysicalDeviceSuitability(vk::PhysicalDevice device, vk::UniqueSurfaceKHR &surface)
+	{
 		// Get device properties
 		auto deviceProperties = device.getProperties();
 
@@ -146,7 +151,7 @@ namespace Obtain::Graphics::Vulkan {
 
 		// Maximum possible size of textures affects graphics quality
 		score += deviceProperties.limits
-		                         .maxImageDimension2D;
+			.maxImageDimension2D;
 
 		// Check if required Extensions are supported
 		bool extensionsSupported = checkDeviceExtensionSupport(device);
@@ -155,18 +160,18 @@ namespace Obtain::Graphics::Vulkan {
 		bool swapchainAdequate = false;
 		if (extensionsSupported) {
 			SwapchainSupportDetails swapchainSupport = SwapchainSupportDetails::querySwapchainSupport(
-					device,
-					surface
+				device,
+				surface
 			);
 			swapchainAdequate = !swapchainSupport.formats
-			                                     .empty() && !swapchainSupport.presentModes
-			                                                                  .empty();
+				.empty() && !swapchainSupport.presentModes
+				.empty();
 		}
 
 		// Check for missing features that are complete dealbreakers
 		if (!(deviceFeatures.geometryShader && QueueFamilyIndices::findQueueFamilies(
-				device,
-				surface
+			device,
+			surface
 		).isComplete() &&
 		      extensionsSupported && swapchainAdequate && deviceFeatures.samplerAnisotropy)) {
 			// TODO: instead of disqualifying for missing Anistropy here, conditionally use it
@@ -176,14 +181,15 @@ namespace Obtain::Graphics::Vulkan {
 		return score;
 	}
 
-	bool Device::checkDeviceExtensionSupport(vk::PhysicalDevice device) {
+	bool Device::checkDeviceExtensionSupport(vk::PhysicalDevice device)
+	{
 
 		std::vector<vk::ExtensionProperties> availableExtensions;
 		availableExtensions = device.enumerateDeviceExtensionProperties();
 
 		std::set<std::string> requiredExtensions(
-				deviceExtensions.begin(),
-				deviceExtensions.end());
+			deviceExtensions.begin(),
+			deviceExtensions.end());
 
 		for (const auto &extension : availableExtensions) {
 			requiredExtensions.erase(extension.extensionName);

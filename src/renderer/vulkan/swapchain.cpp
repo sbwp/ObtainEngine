@@ -25,7 +25,8 @@ namespace Obtain::Graphics::Vulkan {
 		physicalDevice(physicalDevice),
 		surface(surface),
 		commandPool(commandPool),
-		vertexBuffer(vertexBuffer) {
+		vertexBuffer(vertexBuffer)
+	{
 		SwapchainSupportDetails swapchainSupport = SwapchainSupportDetails::querySwapchainSupport(
 			*physicalDevice,
 			surface
@@ -40,21 +41,23 @@ namespace Obtain::Graphics::Vulkan {
 		);
 
 		uint32_t imageCount = swapchainSupport.capabilities
-		                                      .minImageCount + 1;
+			                      .minImageCount + 1;
 		if (swapchainSupport.capabilities
-		                    .maxImageCount > 0 &&
+			    .maxImageCount > 0 &&
 		    imageCount > swapchainSupport.capabilities
-		                                 .maxImageCount
+			    .maxImageCount
 			) {
 			imageCount = swapchainSupport.capabilities
-			                             .maxImageCount;
+				.maxImageCount;
 		}
 
 		vk::SharingMode sharingMode = vk::SharingMode::eConcurrent;
 		uint32_t queueFamilyIndexCount = 2;
-		uint32_t queueFamilyIndices[] = {indices.graphicsFamily
-		                                        .value(), indices.presentFamily
-		                                                         .value()};
+		uint32_t queueFamilyIndices[] = {
+			indices.graphicsFamily
+				.value(), indices.presentFamily
+				.value()
+		};
 		uint32_t *pQueueFamilyIndices = queueFamilyIndices;
 
 		if (indices.graphicsFamily == indices.presentFamily) {
@@ -77,7 +80,7 @@ namespace Obtain::Graphics::Vulkan {
 				queueFamilyIndexCount,
 				pQueueFamilyIndices,
 				swapchainSupport.capabilities
-				                .currentTransform,
+					.currentTransform,
 				vk::CompositeAlphaFlagBitsKHR::eOpaque,
 				presentMode,
 				true,
@@ -126,7 +129,8 @@ namespace Obtain::Graphics::Vulkan {
 		}
 	}
 
-	Swapchain::~Swapchain() {
+	Swapchain::~Swapchain()
+	{
 		device->waitIdle();
 		for (auto imageView : imageViews) {
 			device->destroyImageView(imageView);
@@ -136,7 +140,8 @@ namespace Obtain::Graphics::Vulkan {
 	bool Swapchain::submitFrame(
 		vk::Queue graphicsQueue,
 		vk::Queue presentationQueue
-	) {
+	)
+	{
 		device->waitForFences(
 			1,
 			&outOfFlight[currentFrame].get(),
@@ -195,7 +200,8 @@ namespace Obtain::Graphics::Vulkan {
 	 ******************************************/
 	vk::SurfaceFormatKHR Swapchain::chooseSwapSurfaceFormat(
 		const std::vector<vk::SurfaceFormatKHR> &availableFormats
-	) {
+	)
+	{
 		if (availableFormats.size() == 1 && availableFormats[0].format == vk::Format::eUndefined) {
 			return {vk::Format::eB8G8R8A8Unorm, vk::ColorSpaceKHR::eSrgbNonlinear};
 		}
@@ -212,7 +218,8 @@ namespace Obtain::Graphics::Vulkan {
 
 	vk::PresentModeKHR Swapchain::chooseSwapPresentMode(
 		const std::vector<vk::PresentModeKHR> &availablePresentModes
-	) {
+	)
+	{
 		vk::PresentModeKHR best = vk::PresentModeKHR::eFifo;
 
 		for (const auto &availablePresentMode : availablePresentModes) {
@@ -229,7 +236,8 @@ namespace Obtain::Graphics::Vulkan {
 	vk::Extent2D Swapchain::chooseSwapExtent(
 		const vk::SurfaceCapabilitiesKHR &capabilities,
 		std::array<uint32_t, 2> windowSize
-	) {
+	)
+	{
 		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 			return capabilities.currentExtent;
 		} else {
@@ -237,20 +245,20 @@ namespace Obtain::Graphics::Vulkan {
 
 			actualExtent.width = std::max(
 				capabilities.minImageExtent
-				            .width,
+					.width,
 				std::min(
 					capabilities.maxImageExtent
-					            .width,
+						.width,
 					actualExtent.width
 				)
 			);
 
 			actualExtent.height = std::max(
 				capabilities.minImageExtent
-				            .height,
+					.height,
 				std::min(
 					capabilities.maxImageExtent
-					            .height,
+						.height,
 					actualExtent.height
 				)
 			);
@@ -259,14 +267,15 @@ namespace Obtain::Graphics::Vulkan {
 		}
 	}
 
-	void Swapchain::createPipeline() {
+	void Swapchain::createPipeline()
+	{
 		Shader *vertShader = new Shader(
-			*device,
+			device,
 			"assets/shaders/vert.spv",
 			vk::ShaderStageFlagBits::eVertex
 		);
 		Shader *fragShader = new Shader(
-			*device,
+			device,
 			"assets/shaders/frag.spv",
 			vk::ShaderStageFlagBits::eFragment
 		);
@@ -404,7 +413,8 @@ namespace Obtain::Graphics::Vulkan {
 		delete (fragShader);
 	}
 
-	void Swapchain::createRenderPass() {
+	void Swapchain::createRenderPass()
+	{
 		vk::AttachmentDescription colorAttachment(
 			vk::AttachmentDescriptionFlags(),
 			format,
@@ -454,7 +464,8 @@ namespace Obtain::Graphics::Vulkan {
 		);
 	}
 
-	void Swapchain::createFramebuffers() {
+	void Swapchain::createFramebuffers()
+	{
 		size_t size = imageViews.size();
 
 		// Resize up front to avoid multiple resizings
@@ -475,7 +486,8 @@ namespace Obtain::Graphics::Vulkan {
 		}
 	}
 
-	void Swapchain::createCommandBuffers() {
+	void Swapchain::createCommandBuffers()
+	{
 		commandBuffers = device->allocateCommandBuffersUnique(
 			vk::CommandBufferAllocateInfo(
 				*commandPool,

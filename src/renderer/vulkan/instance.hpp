@@ -10,9 +10,9 @@ namespace Obtain::Graphics::Vulkan {
 	class Instance {
 	public:
 		static vk::UniqueInstance createVkInstance(
-				std::string gameTitle,
-				std::array<uint32_t, 3> gameVersion,
-				std::array<uint32_t, 3> engineVersion
+			std::string gameTitle,
+			std::array<uint32_t, 3> gameVersion,
+			std::array<uint32_t, 3> engineVersion
 		);
 
 	private:

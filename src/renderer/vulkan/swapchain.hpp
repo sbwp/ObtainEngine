@@ -10,14 +10,14 @@ namespace Obtain::Graphics::Vulkan {
 	class Swapchain {
 	public:
 		Swapchain(
-				vk::UniqueInstance &instance,
-				std::unique_ptr<vk::PhysicalDevice> &physicalDevice,
-				vk::UniqueDevice &device,
-				vk::UniqueSurfaceKHR &surface,
-				std::array<uint32_t, 2> windowSize,
-				QueueFamilyIndices indices,
-				vk::UniqueCommandPool &commandPool,
-				vk::UniqueBuffer &vertexBuffer
+			vk::UniqueInstance &instance,
+			std::unique_ptr<vk::PhysicalDevice> &physicalDevice,
+			vk::UniqueDevice &device,
+			vk::UniqueSurfaceKHR &surface,
+			std::array<uint32_t, 2> windowSize,
+			QueueFamilyIndices indices,
+			vk::UniqueCommandPool &commandPool,
+			vk::UniqueBuffer &vertexBuffer
 		);
 
 		~Swapchain();
@@ -27,11 +27,13 @@ namespace Obtain::Graphics::Vulkan {
 			vk::Queue presentationQueue
 		);
 
-		inline vk::UniqueSwapchainKHR &getSwapchain() {
+		inline vk::UniqueSwapchainKHR &getSwapchain()
+		{
 			return swapchain;
 		}
 
-		inline vk::UniqueCommandBuffer &getCommandBuffer(uint32_t i) {
+		inline vk::UniqueCommandBuffer &getCommandBuffer(uint32_t i)
+		{
 			return commandBuffers[i];
 		}
 
@@ -77,8 +79,11 @@ namespace Obtain::Graphics::Vulkan {
 		);
 
 		void createPipeline();
+
 		void createRenderPass();
+
 		void createFramebuffers();
+
 		void createCommandBuffers();
 	};
 }

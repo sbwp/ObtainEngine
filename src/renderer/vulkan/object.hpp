@@ -9,7 +9,9 @@ namespace Obtain::Graphics::Vulkan {
 	class Object {
 	public:
 		Object();
+
 		std::vector<Vertex2D> getVertices();
+
 		uint32_t getBufferSize();
 
 	private:

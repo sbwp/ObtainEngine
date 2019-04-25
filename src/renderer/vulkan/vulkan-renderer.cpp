@@ -13,14 +13,14 @@ namespace Obtain::Graphics::Vulkan {
 	 ***************** public *****************
 	 ******************************************/
 	VulkanRenderer::VulkanRenderer(
-			std::string gameTitle,
-			std::array<uint32_t, 3> gameVersion,
-			std::array<uint32_t, 3> engineVersion
+		std::string gameTitle,
+		std::array<uint32_t, 3> gameVersion,
+		std::array<uint32_t, 3> engineVersion
 	)
-		:
-		gameVersion(gameVersion),
-		gameTitle(gameTitle),
-		resizeOccurred(false) {
+		: gameVersion(gameVersion),
+		  gameTitle(gameTitle),
+		  resizeOccurred(false)
+	{
 
 		windowSize = {1600, 900};
 		initWindow();
@@ -65,7 +65,7 @@ namespace Obtain::Graphics::Vulkan {
 
 		createCommandPool();
 
-		bindVertices();
+		createVertexBuffer();
 
 		swapchain = new Swapchain(
 			instance,
@@ -75,23 +75,25 @@ namespace Obtain::Graphics::Vulkan {
 			windowSize,
 			indices,
 			commandPool,
-			vertexBuffer
+			vertexBuffer->getBuffer()
 		);
 
 	}
 
-	VulkanRenderer::~VulkanRenderer() {
+	VulkanRenderer::~VulkanRenderer()
+	{
 		delete (swapchain);
 		instance->destroyDebugUtilsMessengerEXT(
-				debugMessenger,
-				nullptr,
-				loader
+			debugMessenger,
+			nullptr,
+			loader
 		);
 		glfwDestroyWindow(window);
 		glfwTerminate();
 	}
 
-	void VulkanRenderer::run() {
+	void VulkanRenderer::run()
+	{
 		while (!glfwWindowShouldClose(window)) {
 			glfwPollEvents();
 			drawFrame();
@@ -107,38 +109,42 @@ namespace Obtain::Graphics::Vulkan {
 	/******************************************
 	 ***************** private *****************
 	 ******************************************/
-	void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-		auto p_resizeOccurred = reinterpret_cast<bool*>(glfwGetWindowUserPointer(window));
+	void framebufferResizeCallback(GLFWwindow *window, int width, int height)
+	{
+		auto p_resizeOccurred = reinterpret_cast<bool *>(glfwGetWindowUserPointer(window));
 		*p_resizeOccurred = true;
 	}
 
-	void VulkanRenderer::initWindow() {
+	void VulkanRenderer::initWindow()
+	{
 		glfwInit();
 		glfwWindowHint(
-				GLFW_CLIENT_API,
-				GLFW_NO_API
+			GLFW_CLIENT_API,
+			GLFW_NO_API
 		); // Don't create OpenGL context
 		glfwWindowHint(
-				GLFW_RESIZABLE,
-				true
+			GLFW_RESIZABLE,
+			true
 		); // Temp: make window not resizable
 		window = glfwCreateWindow(
-				windowSize[0],
-				windowSize[1],
-				gameTitle.c_str(),
-				nullptr,
-				nullptr
+			windowSize[0],
+			windowSize[1],
+			gameTitle.c_str(),
+			nullptr,
+			nullptr
 		);
 		glfwSetWindowUserPointer(window, &resizeOccurred);
 
 		glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 	}
 
-	void VulkanRenderer::drawFrame() {
+	void VulkanRenderer::drawFrame()
+	{
 
 	}
 
-	void VulkanRenderer::createCommandPool() {
+	void VulkanRenderer::createCommandPool()
+	{
 		commandPool = device->createCommandPoolUnique(
 			vk::CommandPoolCreateInfo(
 				vk::CommandPoolCreateFlags(),
@@ -150,7 +156,8 @@ namespace Obtain::Graphics::Vulkan {
 		);
 	}
 
-	void VulkanRenderer::updateWindowSize() {
+	void VulkanRenderer::updateWindowSize()
+	{
 		int width = 0, height = 0;
 		while (width == 0 || height == 0) {
 			glfwGetFramebufferSize(window, &width, &height);
@@ -158,7 +165,7 @@ namespace Obtain::Graphics::Vulkan {
 		}
 		windowSize = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
-		delete(swapchain);
+		delete (swapchain);
 		swapchain = new Swapchain(
 			instance,
 			physicalDevice,
@@ -167,49 +174,83 @@ namespace Obtain::Graphics::Vulkan {
 			windowSize,
 			indices,
 			commandPool,
-			vertexBuffer
+			vertexBuffer->getBuffer()
 		);
 		resizeOccurred = false;
 	}
 
-	void VulkanRenderer::bindVertices() {
-		vertexBuffer = device->createBufferUnique(
-			vk::BufferCreateInfo(
-				vk::BufferCreateFlags(),
-				obj.getBufferSize(),
-				vk::BufferUsageFlagBits::eVertexBuffer,
-				vk::SharingMode::eExclusive
+	void VulkanRenderer::createVertexBuffer()
+	{
+		stagingBuffer = std::make_unique<Buffer>(
+			Buffer(
+				device,
+				physicalDevice,
+				static_cast<vk::DeviceSize>(obj.getBufferSize()),
+				vk::BufferUsageFlagBits::eTransferSrc,
+				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 			)
 		);
 
-		vk::MemoryRequirements memoryRequirements = device->getBufferMemoryRequirements(*vertexBuffer);
-		uint32_t index = Device::findMemoryType(
-			*physicalDevice,
-			memoryRequirements.memoryTypeBits,
-			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-		);
+		stagingBuffer->load(0u, obj.getVertices().data(), static_cast<size_t>(obj.getBufferSize()));
 
-		vertexBufferMemory = device->allocateMemoryUnique(
-			vk::MemoryAllocateInfo(
-				memoryRequirements.size,
-				index
+		vertexBuffer = std::make_unique<Buffer>(
+			Buffer(
+				device,
+				physicalDevice,
+				static_cast<vk::DeviceSize>(obj.getBufferSize()),
+				vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
+				vk::MemoryPropertyFlagBits::eDeviceLocal
 			)
 		);
 
-		device->bindBufferMemory(
-			*vertexBuffer,
-			*vertexBufferMemory,
-			static_cast<vk::DeviceSize>(0)
-		);
-
-		void* data = device->mapMemory(
-			*vertexBufferMemory,
-			static_cast<vk::DeviceSize>(0),
+		copyBuffer(
+			stagingBuffer->getBuffer(), 0u,
+			vertexBuffer->getBuffer(), 0u,
 			static_cast<vk::DeviceSize>(obj.getBufferSize())
 		);
 
-		memcpy(data, obj.getVertices().data(), static_cast<size_t>(obj.getBufferSize()));
+	}
 
-		device->unmapMemory(*vertexBufferMemory);
+	void VulkanRenderer::copyBuffer(
+		vk::UniqueBuffer &src, vk::DeviceSize srcOffset, vk::UniqueBuffer &dst, vk::DeviceSize dstOffset,
+		vk::DeviceSize size
+	)
+	{
+		std::vector<vk::UniqueCommandBuffer> allocatedCommandBuffers = device->allocateCommandBuffersUnique(
+			vk::CommandBufferAllocateInfo(
+				*commandPool,
+				vk::CommandBufferLevel::ePrimary,
+				1u
+			)
+		);
+
+		allocatedCommandBuffers[0]->begin(
+			vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit)
+		);
+
+		vk::BufferCopy region(srcOffset, dstOffset, size);
+
+		allocatedCommandBuffers[0]->copyBuffer(
+			*src,
+			*dst,
+			1u,
+			&region
+		);
+
+		allocatedCommandBuffers[0]->end();
+
+		vk::UniqueFence fence = device->createFenceUnique(vk::FenceCreateInfo());
+
+		vk::SubmitInfo submitInfo(
+			0u,
+			nullptr,
+			nullptr,
+			1u,
+			&allocatedCommandBuffers[0].get()
+		);
+		graphicsQueue.submit(1, &submitInfo, *fence);
+		device->waitForFences(
+			1u, &fence.get(), true, std::numeric_limits<uint64_t>::max()
+		);
 	}
 }

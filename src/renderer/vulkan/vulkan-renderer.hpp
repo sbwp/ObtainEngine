@@ -9,14 +9,15 @@
 #include "../renderer.hpp"
 #include "swapchain.hpp"
 #include "object.hpp"
+#include "buffer.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 	class VulkanRenderer : public Renderer {
 	public:
 		VulkanRenderer(
-				std::string gameTitle,
-				std::array<uint32_t, 3> gameVersion,
-				std::array<uint32_t, 3> engineVersion
+			std::string gameTitle,
+			std::array<uint32_t, 3> gameVersion,
+			std::array<uint32_t, 3> engineVersion
 		);
 
 		~VulkanRenderer();
@@ -48,14 +49,23 @@ namespace Obtain::Graphics::Vulkan {
 		Swapchain *swapchain;
 		vk::UniqueCommandPool commandPool;
 
-		vk::UniqueBuffer vertexBuffer;
-		vk::UniqueDeviceMemory vertexBufferMemory;
+		std::unique_ptr<Buffer>  vertexBuffer;
+		std::unique_ptr<Buffer>  stagingBuffer;
 
 		void initWindow();
+
 		void drawFrame();
+
 		void createCommandPool();
+
 		void updateWindowSize();
-		void bindVertices();
+
+		void createVertexBuffer();
+
+		void copyBuffer(
+			vk::UniqueBuffer &src, vk::DeviceSize srcOffset, vk::UniqueBuffer &dst, vk::DeviceSize dstOffset,
+			vk::DeviceSize size
+		);
 	};
 }
 
