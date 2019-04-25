@@ -13,10 +13,11 @@ namespace Obtain::Graphics::Vulkan {
 	 ***************** public *****************
 	 ******************************************/
 	const std::vector<const char *> Validation::validationLayers = {
-			"VK_LAYER_LUNARG_standard_validation"
+		"VK_LAYER_LUNARG_standard_validation"
 	};
 
-	bool Validation::useValidation() {
+	bool Validation::useValidation()
+	{
 		if (USE_VALIDATION_LAYERS && !areValidationLayersSupported()) {
 			throw std::runtime_error("Validation layers not supported.");
 		}
@@ -25,9 +26,10 @@ namespace Obtain::Graphics::Vulkan {
 	}
 
 	vk::DebugUtilsMessengerEXT Validation::createDebugMessenger(
-			vk::UniqueInstance &instance,
-			vk::DispatchLoaderDynamic loader
-	) {
+		vk::UniqueInstance &instance,
+		vk::DispatchLoaderDynamic loader
+	)
+	{
 		return instance->createDebugUtilsMessengerEXT(
 			vk::DebugUtilsMessengerCreateInfoEXT(
 				vk::DebugUtilsMessengerCreateFlagsEXT(),
@@ -44,7 +46,8 @@ namespace Obtain::Graphics::Vulkan {
 		);
 	}
 
-	std::vector<const char *> Validation::getValidationLayers() {
+	std::vector<const char *> Validation::getValidationLayers()
+	{
 		if (USE_VALIDATION_LAYERS) {
 			return validationLayers;
 		} else {
@@ -56,7 +59,8 @@ namespace Obtain::Graphics::Vulkan {
 	 ***************** private *****************
 	 ******************************************/
 
-	bool Validation::areValidationLayersSupported() {
+	bool Validation::areValidationLayersSupported()
+	{
 		std::vector<vk::LayerProperties> availableLayers = vk::enumerateInstanceLayerProperties();
 
 		for (const char *layerName : validationLayers) {
@@ -64,8 +68,8 @@ namespace Obtain::Graphics::Vulkan {
 
 			for (const auto &layerProperties : availableLayers) {
 				if (strcmp(
-						layerName,
-						layerProperties.layerName
+					layerName,
+					layerProperties.layerName
 				) == 0) {
 					layerFound = true;
 					break;
@@ -81,11 +85,12 @@ namespace Obtain::Graphics::Vulkan {
 	}
 
 	VKAPI_ATTR VkBool32 VKAPI_CALL Validation::debugCallback(
-			VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-			VkDebugUtilsMessageTypeFlagsEXT messageType,
-			const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-			void *pUserData
-	) {
+		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+		VkDebugUtilsMessageTypeFlagsEXT messageType,
+		const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+		void *pUserData
+	)
+	{
 		std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
 		return VK_FALSE;

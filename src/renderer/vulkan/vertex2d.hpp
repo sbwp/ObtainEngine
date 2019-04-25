@@ -18,7 +18,8 @@ namespace Obtain::Graphics::Vulkan {
 		glm::vec2 pos;
 		glm::vec3 color;
 
-		static vk::VertexInputBindingDescription getBindingDescription() {
+		static vk::VertexInputBindingDescription getBindingDescription()
+		{
 			vk::VertexInputBindingDescription bindingDescription = {};
 			bindingDescription.binding = 0;
 			bindingDescription.stride = sizeof(Vertex2D);
@@ -26,7 +27,8 @@ namespace Obtain::Graphics::Vulkan {
 			return bindingDescription;
 		}
 
-		static std::array<vk::VertexInputAttributeDescription, 2> getAttributeDescriptions() {
+		static std::array<vk::VertexInputAttributeDescription, 2> getAttributeDescriptions()
+		{
 			std::array<vk::VertexInputAttributeDescription, 2> attributeDescriptions = {};
 
 			attributeDescriptions[0].binding = 0;
@@ -42,7 +44,8 @@ namespace Obtain::Graphics::Vulkan {
 			return attributeDescriptions;
 		}
 
-		bool operator==(const Vertex2D &other) const {
+		bool operator==(const Vertex2D &other) const
+		{
 			return pos == other.pos && color == other.color;
 		}
 	};

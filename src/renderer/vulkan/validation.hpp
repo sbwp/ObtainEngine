@@ -11,8 +11,8 @@ namespace Obtain::Graphics::Vulkan {
 		static bool useValidation();
 
 		static vk::DebugUtilsMessengerEXT createDebugMessenger(
-				vk::UniqueInstance &instance,
-				vk::DispatchLoaderDynamic loader
+			vk::UniqueInstance &instance,
+			vk::DispatchLoaderDynamic loader
 		);
 
 		static std::vector<const char *> getValidationLayers();
@@ -21,10 +21,10 @@ namespace Obtain::Graphics::Vulkan {
 		static bool areValidationLayersSupported();
 
 		static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-				VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-				VkDebugUtilsMessageTypeFlagsEXT messageType,
-				const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-				void *pUserData
+			VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+			VkDebugUtilsMessageTypeFlagsEXT messageType,
+			const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+			void *pUserData
 		);
 	};
 }

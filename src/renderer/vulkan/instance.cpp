@@ -10,20 +10,21 @@ namespace Obtain::Graphics::Vulkan {
 	 ***************** public *****************
 	 ******************************************/
 	vk::UniqueInstance Instance::createVkInstance(
-			std::string gameTitle,
-			std::array<uint32_t, 3> gameVersion,
-			std::array<uint32_t, 3> engineVersion
-	) {
+		std::string gameTitle,
+		std::array<uint32_t, 3> gameVersion,
+		std::array<uint32_t, 3> engineVersion
+	)
+	{
 		vk::ApplicationInfo appInfo(
-				gameTitle.c_str(),
-				VK_MAKE_VERSION(gameVersion[0],
-				                gameVersion[1],
-				                gameVersion[2]),
-				"Obtain Engine",
-				VK_MAKE_VERSION(engineVersion[0],
-				                engineVersion[1],
-				                engineVersion[2]), // engine gameVersion (replace with not constant)
-				VK_API_VERSION_1_1
+			gameTitle.c_str(),
+			VK_MAKE_VERSION(gameVersion[0],
+			                gameVersion[1],
+			                gameVersion[2]),
+			"Obtain Engine",
+			VK_MAKE_VERSION(engineVersion[0],
+			                engineVersion[1],
+			                engineVersion[2]), // engine gameVersion (replace with not constant)
+			VK_API_VERSION_1_1
 		);
 
 		bool useValidationLayers = Validation::useValidation();
@@ -47,7 +48,8 @@ namespace Obtain::Graphics::Vulkan {
 	/******************************************
 	 ***************** private *****************
 	 ******************************************/
-	bool Instance::checkForSupportedExtensions(std::vector<const char *> requiredExtensions) {
+	bool Instance::checkForSupportedExtensions(std::vector<const char *> requiredExtensions)
+	{
 		std::vector<vk::ExtensionProperties> extensions = vk::enumerateInstanceExtensionProperties();
 
 		// Print all available extensions
@@ -61,8 +63,8 @@ namespace Obtain::Graphics::Vulkan {
 			bool found = false;
 			for (const auto &extension : extensions) {
 				if (strcmp(
-						extension.extensionName,
-						requiredExtension
+					extension.extensionName,
+					requiredExtension
 				) == 0) {
 					found = true;
 					break;
@@ -76,14 +78,15 @@ namespace Obtain::Graphics::Vulkan {
 		return true;
 	}
 
-	std::vector<const char *> Instance::getRequiredExtensions(bool useValidationLayers) {
+	std::vector<const char *> Instance::getRequiredExtensions(bool useValidationLayers)
+	{
 		uint32_t glfwExtensionCount = 0;
 		const char **glfwExtensions;
 		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
 		std::vector<const char *> extensions(
-				glfwExtensions,
-				glfwExtensions + glfwExtensionCount
+			glfwExtensions,
+			glfwExtensions + glfwExtensionCount
 		);
 
 		if (useValidationLayers) {

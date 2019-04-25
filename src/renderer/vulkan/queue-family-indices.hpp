@@ -8,14 +8,16 @@ namespace Obtain::Graphics::Vulkan {
 		std::optional<uint32_t> graphicsFamily;
 		std::optional<uint32_t> presentFamily;
 
-		bool isComplete() {
+		bool isComplete()
+		{
 			return graphicsFamily.has_value() && presentFamily.has_value();
 		}
 
 		static QueueFamilyIndices findQueueFamilies(
 			vk::PhysicalDevice device,
 			vk::UniqueSurfaceKHR &surface
-		) {
+		)
+		{
 			QueueFamilyIndices indices;
 
 			std::vector<vk::QueueFamilyProperties> queueFamilies = device.getQueueFamilyProperties();
@@ -25,9 +27,9 @@ namespace Obtain::Graphics::Vulkan {
 
 				vk::Bool32 presentSupport = false;
 				device.getSurfaceSupportKHR(
-						i,
-						*surface,
-						&presentSupport
+					i,
+					*surface,
+					&presentSupport
 				);
 
 				if (queueFamily.queueCount > 0 && presentSupport) {

@@ -19,7 +19,8 @@ namespace Obtain::Graphics::Vulkan {
 		glm::vec3 color;
 		glm::vec2 texCoord;
 
-		static vk::VertexInputBindingDescription getBindingDescription() {
+		static vk::VertexInputBindingDescription getBindingDescription()
+		{
 			vk::VertexInputBindingDescription bindingDescription = {};
 			bindingDescription.binding = 0;
 			bindingDescription.stride = sizeof(Vertex);
@@ -27,7 +28,8 @@ namespace Obtain::Graphics::Vulkan {
 			return bindingDescription;
 		}
 
-		static std::array<vk::VertexInputAttributeDescription, 3> getAttributeDescriptions() {
+		static std::array<vk::VertexInputAttributeDescription, 3> getAttributeDescriptions()
+		{
 			std::array<vk::VertexInputAttributeDescription, 3> attributeDescriptions = {};
 
 			attributeDescriptions[0].binding = 0;
@@ -51,18 +53,20 @@ namespace Obtain::Graphics::Vulkan {
 			return attributeDescriptions;
 		}
 
-		float distance(Vertex v) {
+		float distance(Vertex v)
+		{
 			float dx = pos.x - v.pos
-			                    .x;
+				.x;
 			float dy = pos.y - v.pos
-			                    .y;
+				.y;
 			float dz = pos.z - v.pos
-			                    .z;
+				.z;
 
 			return (float) sqrt(dx * dx + dy * dy + dz * dz);
 		}
 
-		bool operator==(const Vertex &other) const {
+		bool operator==(const Vertex &other) const
+		{
 			return pos == other.pos && color == other.color && texCoord == other.texCoord;
 		}
 	};
@@ -72,7 +76,8 @@ namespace Obtain::Graphics::Vulkan {
 namespace std {
 	template<>
 	struct hash<Obtain::Graphics::Vulkan::Vertex> {
-		size_t operator()(Obtain::Graphics::Vulkan::Vertex const &vertex) const {
+		size_t operator()(Obtain::Graphics::Vulkan::Vertex const &vertex) const
+		{
 			return ((hash<glm::vec3>()(vertex.pos) ^
 			         (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
 			       (hash<glm::vec2>()(vertex.texCoord) << 1);
