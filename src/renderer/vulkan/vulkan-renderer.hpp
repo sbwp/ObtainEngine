@@ -50,7 +50,7 @@ namespace Obtain::Graphics::Vulkan {
 		vk::UniqueCommandPool commandPool;
 
 		std::unique_ptr<Buffer>  vertexBuffer;
-		std::unique_ptr<Buffer>  stagingBuffer;
+		std::unique_ptr<Buffer>  indexBuffer;
 
 		void initWindow();
 
@@ -60,7 +60,7 @@ namespace Obtain::Graphics::Vulkan {
 
 		void updateWindowSize();
 
-		void createVertexBuffer();
+		std::unique_ptr<Buffer> createAndLoadBuffer(vk::DeviceSize size, vk::BufferUsageFlags usageFlags, void *data);
 
 		void copyBuffer(
 			vk::UniqueBuffer &src, vk::DeviceSize srcOffset, vk::UniqueBuffer &dst, vk::DeviceSize dstOffset,

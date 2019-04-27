@@ -65,7 +65,11 @@ namespace Obtain::Graphics::Vulkan {
 
 		createCommandPool();
 
-		createVertexBuffer();
+		vertexBuffer = createAndLoadBuffer(static_cast<vk::DeviceSize>(obj.getBufferSize()),
+		                                   vk::BufferUsageFlagBits::eVertexBuffer, obj.getVertices().data());
+
+		indexBuffer = createAndLoadBuffer(static_cast<vk::DeviceSize>(obj.getIndexBufferSize()),
+		                                   vk::BufferUsageFlagBits::eIndexBuffer, obj.getIndices().data());
 
 		swapchain = new Swapchain(
 			instance,
@@ -75,7 +79,8 @@ namespace Obtain::Graphics::Vulkan {
 			windowSize,
 			indices,
 			commandPool,
-			vertexBuffer->getBuffer()
+			vertexBuffer,
+			indexBuffer
 		);
 
 	}
@@ -174,41 +179,41 @@ namespace Obtain::Graphics::Vulkan {
 			windowSize,
 			indices,
 			commandPool,
-			vertexBuffer->getBuffer()
+			vertexBuffer,
+			indexBuffer
 		);
 		resizeOccurred = false;
 	}
 
-	void VulkanRenderer::createVertexBuffer()
+	std::unique_ptr<Buffer> VulkanRenderer::createAndLoadBuffer(vk::DeviceSize size, vk::BufferUsageFlags usageFlags, void *data)
 	{
-		stagingBuffer = std::make_unique<Buffer>(
-			Buffer(
-				device,
-				physicalDevice,
-				static_cast<vk::DeviceSize>(obj.getBufferSize()),
-				vk::BufferUsageFlagBits::eTransferSrc,
-				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-			)
+		Buffer stagingBuffer = Buffer(
+			device,
+			physicalDevice,
+			size,
+			vk::BufferUsageFlagBits::eTransferSrc,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 		);
 
-		stagingBuffer->load(0u, obj.getVertices().data(), static_cast<size_t>(obj.getBufferSize()));
+		stagingBuffer.load(0u, data, static_cast<size_t>(size));
 
-		vertexBuffer = std::make_unique<Buffer>(
+		std::unique_ptr<Buffer> newBuffer = std::make_unique<Buffer>(
 			Buffer(
 				device,
 				physicalDevice,
-				static_cast<vk::DeviceSize>(obj.getBufferSize()),
-				vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
+				size,
+				vk::BufferUsageFlagBits::eTransferDst | usageFlags,
 				vk::MemoryPropertyFlagBits::eDeviceLocal
 			)
 		);
 
 		copyBuffer(
-			stagingBuffer->getBuffer(), 0u,
-			vertexBuffer->getBuffer(), 0u,
-			static_cast<vk::DeviceSize>(obj.getBufferSize())
+			stagingBuffer.getBuffer(), 0u,
+			newBuffer->getBuffer(), 0u,
+			size
 		);
 
+		return newBuffer;
 	}
 
 	void VulkanRenderer::copyBuffer(
