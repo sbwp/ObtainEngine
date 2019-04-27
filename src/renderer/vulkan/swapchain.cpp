@@ -17,7 +17,8 @@ namespace Obtain::Graphics::Vulkan {
 		std::array<uint32_t, 2> windowSize,
 		QueueFamilyIndices indices,
 		vk::UniqueCommandPool &commandPool,
-		vk::UniqueBuffer &vertexBuffer
+		std::unique_ptr<Buffer> &vertexBuffer,
+		std::unique_ptr<Buffer> &indexBuffer
 	)
 		:
 		instance(instance),
@@ -25,7 +26,8 @@ namespace Obtain::Graphics::Vulkan {
 		physicalDevice(physicalDevice),
 		surface(surface),
 		commandPool(commandPool),
-		vertexBuffer(vertexBuffer)
+		vertexBuffer(vertexBuffer),
+		indexBuffer(indexBuffer)
 	{
 		SwapchainSupportDetails swapchainSupport = SwapchainSupportDetails::querySwapchainSupport(
 			*physicalDevice,
@@ -525,10 +527,14 @@ namespace Obtain::Graphics::Vulkan {
 			);
 
 			commandBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline);
-			vk::Buffer vertexBuffers[] = {*vertexBuffer};
+			vk::Buffer vertexBuffers[] = {*(vertexBuffer->getBuffer())};
 			vk::DeviceSize offsets[] = {0};
 			commandBuffer->bindVertexBuffers(0, 1, vertexBuffers, offsets);
-			commandBuffer->draw(3, 1, 0, 0);
+			commandBuffer->bindIndexBuffer(*(indexBuffer->getBuffer()),
+			                               static_cast<vk::DeviceSize>(0),
+			                               vk::IndexType::eUint32);
+			commandBuffer->drawIndexed(static_cast<uint32_t>(indexBuffer->getSize() / sizeof(uint32_t)),
+			                           1, 0, 0, 0);
 			commandBuffer->endRenderPass();
 			commandBuffer->end();
 		}

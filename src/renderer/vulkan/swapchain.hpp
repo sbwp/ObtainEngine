@@ -5,6 +5,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "queue-family-indices.hpp"
+#include "buffer.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 	class Swapchain {
@@ -17,7 +18,8 @@ namespace Obtain::Graphics::Vulkan {
 			std::array<uint32_t, 2> windowSize,
 			QueueFamilyIndices indices,
 			vk::UniqueCommandPool &commandPool,
-			vk::UniqueBuffer &vertexBuffer
+			std::unique_ptr<Buffer> &vertexBuffer,
+			std::unique_ptr<Buffer> &indexBuffer
 		);
 
 		~Swapchain();
@@ -57,7 +59,8 @@ namespace Obtain::Graphics::Vulkan {
 
 		vk::UniqueCommandPool &commandPool;
 		std::vector<vk::UniqueCommandBuffer> commandBuffers;
-		vk::UniqueBuffer &vertexBuffer;
+		std::unique_ptr<Buffer> &vertexBuffer;
+		std::unique_ptr<Buffer> &indexBuffer;
 
 		static const int MaxFramesInFlight = 2;
 		std::array<vk::UniqueSemaphore, MaxFramesInFlight> imageReady;

@@ -11,7 +11,7 @@ namespace Obtain::Graphics::Vulkan {
 		vk::UniqueDevice &device, std::unique_ptr<vk::PhysicalDevice> &physicalDevice, vk::DeviceSize size,
 		vk::BufferUsageFlags usageFlags, vk::MemoryPropertyFlags propertyFlags
 	)
-		: device(device), physicalDevice(physicalDevice)
+		: device(device), physicalDevice(physicalDevice), size(size)
 	{
 		buffer = device->createBufferUnique(
 			vk::BufferCreateInfo(
@@ -56,5 +56,17 @@ namespace Obtain::Graphics::Vulkan {
 			static_cast<size_t>(size));
 
 		device->unmapMemory(*memory);
+	}
+
+	vk::UniqueBuffer &Buffer::getBuffer() {
+		return buffer;
+	}
+
+	vk::UniqueDeviceMemory &Buffer::getDeviceMemory() {
+		return memory;
+	}
+
+	vk::DeviceSize Buffer::getSize() {
+		return size;
 	}
 }

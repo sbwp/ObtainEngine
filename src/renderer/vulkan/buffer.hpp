@@ -17,13 +17,14 @@ namespace Obtain::Graphics::Vulkan {
 
 		void load(vk::DeviceSize offset, void *source, size_t size);
 
-		vk::UniqueBuffer &getBuffer()
-		{ return buffer; }
+		vk::UniqueBuffer &getBuffer();
 
-		vk::UniqueDeviceMemory &getDeviceMemory()
-		{ return memory; }
+		vk::UniqueDeviceMemory &getDeviceMemory();
+
+		vk::DeviceSize getSize();
 
 	private:
+		vk::DeviceSize size;
 		vk::UniqueBuffer buffer;
 		vk::UniqueDeviceMemory memory;
 
