@@ -53,7 +53,10 @@ namespace Obtain::Graphics::Vulkan {
 		std::unique_ptr<vk::PhysicalDevice> &physicalDevice;
 		vk::UniqueSurfaceKHR &surface;
 
-		vk::UniquePipelineLayout layout;
+		vk::UniquePipelineLayout pipelineLayout;
+		vk::UniqueDescriptorSetLayout descriptorSetLayout;
+		vk::UniqueDescriptorPool descriptorPool;
+		std::vector<vk::UniqueDescriptorSet> descriptorSets;
 		vk::UniquePipeline pipeline;
 		vk::UniqueRenderPass renderPass;
 
@@ -61,6 +64,7 @@ namespace Obtain::Graphics::Vulkan {
 		std::vector<vk::UniqueCommandBuffer> commandBuffers;
 		std::unique_ptr<Buffer> &vertexBuffer;
 		std::unique_ptr<Buffer> &indexBuffer;
+		std::vector<std::unique_ptr<Buffer>> uniformBuffers;
 
 		static const int MaxFramesInFlight = 2;
 		std::array<vk::UniqueSemaphore, MaxFramesInFlight> imageReady;
@@ -82,12 +86,14 @@ namespace Obtain::Graphics::Vulkan {
 		);
 
 		void createPipeline();
-
 		void createRenderPass();
-
 		void createFramebuffers();
-
+		void createUniformBuffers();
 		void createCommandBuffers();
+		void createDescriptorPool();
+		void createDescriptorSets();
+
+		void updateUniformBuffer(uint32_t currentImage);
 	};
 }
 
