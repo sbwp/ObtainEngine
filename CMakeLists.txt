@@ -48,7 +48,7 @@ add_executable(obtain src/main.cpp
         src/renderer/shaders/basic.frag
         src/renderer/shaders/basic.vert
         src/renderer/shaders/shader.frag
-        src/renderer/shaders/shader.vert src/renderer/vulkan/object.cpp src/renderer/vulkan/object.hpp src/renderer/vulkan/buffer.cpp src/renderer/vulkan/buffer.hpp)
+        src/renderer/shaders/shader.vert src/renderer/vulkan/object.cpp src/renderer/vulkan/object.hpp src/renderer/vulkan/buffer.cpp src/renderer/vulkan/buffer.hpp src/renderer/vulkan/descriptor.cpp src/renderer/vulkan/descriptor.hpp src/utils/time.cpp src/utils/time.hpp)
 
 
 add_dependencies(obtain shaders)

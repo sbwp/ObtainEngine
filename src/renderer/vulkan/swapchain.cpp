@@ -1,8 +1,17 @@
 #include "swapchain.hpp"
+
+#define GLM_FORCE_RADIANS
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "swapchain-support-details.hpp"
 #include "shader.hpp"
 #include "queue-family-indices.hpp"
 #include "vertex2d.hpp"
+#include "descriptor.hpp"
+#include "uniform-buffer-object.hpp"
+#include "../../utils/time.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 
@@ -116,8 +125,12 @@ namespace Obtain::Graphics::Vulkan {
 			);
 		}
 		createRenderPass();
+		descriptorSetLayout = Descriptor::createDescriptorSetLayout(device);
 		createPipeline();
 		createFramebuffers();
+		createUniformBuffers();
+		createDescriptorPool();
+		createDescriptorSets();
 		createCommandBuffers();
 
 		for (size_t i = 0; i < MaxFramesInFlight; i++) {
@@ -162,6 +175,8 @@ namespace Obtain::Graphics::Vulkan {
 		} catch (vk::OutOfDateKHRError &error) {
 			return false;
 		}
+
+		updateUniformBuffer(imageIndex);
 
 		vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
 		vk::SubmitInfo submitInfo(
@@ -330,7 +345,7 @@ namespace Obtain::Graphics::Vulkan {
 			false,
 			vk::PolygonMode::eFill,
 			vk::CullModeFlagBits::eBack,
-			vk::FrontFace::eClockwise,
+			vk::FrontFace::eCounterClockwise,
 			false,
 			0.0f,
 			0.0f,
@@ -375,11 +390,11 @@ namespace Obtain::Graphics::Vulkan {
 			dynamicStates.data()
 		);
 
-		layout = device->createPipelineLayoutUnique(
+		pipelineLayout = device->createPipelineLayoutUnique(
 			vk::PipelineLayoutCreateInfo(
 				vk::PipelineLayoutCreateFlags(),
-				0,
-				nullptr,
+				1,
+				&descriptorSetLayout.get(),
 				0,
 				nullptr
 			)
@@ -405,7 +420,7 @@ namespace Obtain::Graphics::Vulkan {
 				nullptr,
 				&colorBlendingCreateInfo,
 				nullptr,
-				*layout,
+				*pipelineLayout,
 				*renderPass,
 				0
 			)
@@ -533,10 +548,96 @@ namespace Obtain::Graphics::Vulkan {
 			commandBuffer->bindIndexBuffer(*(indexBuffer->getBuffer()),
 			                               static_cast<vk::DeviceSize>(0),
 			                               vk::IndexType::eUint32);
+			commandBuffers[i]->bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+			                                      *pipelineLayout,
+			                                      0,
+			                                      1,
+			                                      &descriptorSets[i].get(),
+			                                      0,
+			                                      nullptr);
 			commandBuffer->drawIndexed(static_cast<uint32_t>(indexBuffer->getSize() / sizeof(uint32_t)),
 			                           1, 0, 0, 0);
 			commandBuffer->endRenderPass();
 			commandBuffer->end();
 		}
+	}
+
+	void Swapchain::createUniformBuffers()
+	{
+		uniformBuffers.resize(images.size());
+		for (size_t i = 0; i < images.size(); i++) {
+			uniformBuffers[i] = std::make_unique<Buffer>(
+				Buffer(
+					device,
+					physicalDevice,
+					sizeof(UniformBufferObject),
+					vk::BufferUsageFlagBits::eUniformBuffer,
+					vk::MemoryPropertyFlagBits::eHostVisible |
+					vk::MemoryPropertyFlagBits::eHostCoherent)
+			);
+		}
+	}
+
+	void Swapchain::createDescriptorPool()
+	{
+		vk::DescriptorPoolSize size(vk::DescriptorType::eUniformBuffer,
+		                                static_cast<uint32_t>(images.size()));
+
+		vk::DescriptorPoolCreateInfo createInfo(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+		                                        static_cast<uint32_t>(images.size()),
+		                                        1,
+		                                        &size);
+
+		descriptorPool = device->createDescriptorPoolUnique(createInfo);
+	}
+
+	void Swapchain::createDescriptorSets()
+	{
+		std::vector<vk::DescriptorSetLayout> layouts(images.size(), *descriptorSetLayout);
+
+		vk::DescriptorSetAllocateInfo allocateInfo(*descriptorPool,
+		                                           static_cast<uint32_t>(images.size()),
+		                                           layouts.data());
+
+		descriptorSets = device->allocateDescriptorSetsUnique(allocateInfo);
+
+		for (size_t i = 0; i < images.size(); i++) {
+			vk::DescriptorBufferInfo bufferInfo(*(uniformBuffers[i]->getBuffer()),
+			                                    0,
+			                                    sizeof(UniformBufferObject));
+
+			vk::WriteDescriptorSet writeOp(*(descriptorSets[i]),
+			                               0,
+			                               0,
+			                               1,
+			                               vk::DescriptorType::eUniformBuffer,
+			                               nullptr,
+			                               &bufferInfo,
+			                               nullptr);
+
+			device->updateDescriptorSets(1,
+			                             &writeOp,
+			                             0,
+			                             nullptr);
+		}
+	}
+
+	void Swapchain::updateUniformBuffer(uint32_t currentImage)
+	{
+		float time = Time::elapsedTime();
+		UniformBufferObject ubo = {};
+		ubo.model = glm::rotate(glm::mat4(1.0f),
+		                        time * glm::radians(90.0f),
+		                        glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f),
+		                       glm::vec3(0.0f, 0.0f, 0.0f),
+		                       glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.projection = glm::perspective(glm::radians(45.0f),
+		                                  static_cast<float>(extent.width) / static_cast<float>(extent.height),
+		                                  01.f,
+		                                  10.0f);
+		ubo.projection[1][1] *= -1;
+
+		uniformBuffers[currentImage]->load(0, &ubo, sizeof(ubo));
 	}
 }

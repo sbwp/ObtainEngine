@@ -267,6 +267,7 @@ libs/vulkansdk/*
 build/*
 intermediate/*
 oldsrc/*
+assets/*
 
 *.vcxproj
 *.vcxproj.filters

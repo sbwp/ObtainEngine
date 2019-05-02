@@ -61,3 +61,10 @@
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
+
+###############################################################################
+# Git LFS for assets
+#
+# Files matching below will be committed using Git LFS
+###############################################################################
+assets/* filter=lfs diff=lfs merge=lfs -text
