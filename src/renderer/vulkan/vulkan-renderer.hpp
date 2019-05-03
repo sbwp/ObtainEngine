@@ -10,6 +10,7 @@
 #include "swapchain.hpp"
 #include "object.hpp"
 #include "buffer.hpp"
+#include "device.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 	class VulkanRenderer : public Renderer {
@@ -39,12 +40,10 @@ namespace Obtain::Graphics::Vulkan {
 		vk::DispatchLoaderDynamic loader;
 		vk::DebugUtilsMessengerEXT debugMessenger;
 
-		vk::UniqueSurfaceKHR surface;
-		std::unique_ptr<vk::PhysicalDevice> physicalDevice;
-		vk::UniqueDevice device;
+		std::unique_ptr<Device> device;
 
-		vk::Queue graphicsQueue;
-		vk::Queue presentationQueue;
+		vk::Queue *graphicsQueue;
+		vk::Queue *presentationQueue;
 
 		Swapchain *swapchain;
 		vk::UniqueCommandPool commandPool;
@@ -55,8 +54,6 @@ namespace Obtain::Graphics::Vulkan {
 		void initWindow();
 
 		void drawFrame();
-
-		void createCommandPool();
 
 		void updateWindowSize();
 

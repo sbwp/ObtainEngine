@@ -1,5 +1,5 @@
-#ifndef OBTAIN_OBJECT_HPP
-#define OBTAIN_OBJECT_HPP
+#ifndef OBJECT_HPP
+#define OBJECT_HPP
 
 #include <vector>
 
@@ -22,4 +22,4 @@ namespace Obtain::Graphics::Vulkan {
 	};
 }
 
-#endif // OBTAIN_OBJECT_HPP
+#endif // OBJECT_HPP

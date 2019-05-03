@@ -4,58 +4,28 @@
 
 #include "buffer.hpp"
 
-#include "device.hpp"
-
 namespace Obtain::Graphics::Vulkan {
-	Buffer::Buffer(
-		vk::UniqueDevice &device, std::unique_ptr<vk::PhysicalDevice> &physicalDevice, vk::DeviceSize size,
-		vk::BufferUsageFlags usageFlags, vk::MemoryPropertyFlags propertyFlags
-	)
-		: device(device), physicalDevice(physicalDevice), size(size)
+	Buffer::Buffer(std::unique_ptr<Device> &device, vk::DeviceSize size, const vk::BufferUsageFlags &usageFlags,
+	               const vk::MemoryPropertyFlags &propertyFlags)
+		: device(device), size(size)
 	{
-		buffer = device->createBufferUnique(
-			vk::BufferCreateInfo(
-				vk::BufferCreateFlags(),
-				size,
-				usageFlags,
-				vk::SharingMode::eExclusive
-			)
-		);
+		buffer = device->createBuffer(size, usageFlags);
 
-		auto memoryRequirements = device->getBufferMemoryRequirements(*buffer);
+		auto memoryRequirements = device->getBufferMemoryRequirements(buffer);
+		auto memoryType = device->findMemoryType(memoryRequirements.memoryTypeBits,
+		                                        propertyFlags);
 
-		memory = device->allocateMemoryUnique(
-			vk::MemoryAllocateInfo(
-				memoryRequirements.size,
-				Device::findMemoryType(
-					*physicalDevice,
-					memoryRequirements.memoryTypeBits,
-					propertyFlags
-				)
-			)
-		);
+		memory = device->allocateMemory(memoryRequirements.size,
+		                               memoryType);
 
-		device->bindBufferMemory(
-			*buffer,
-			*memory,
-			0u
-		);
+		offset = 0u;
+
+		device->bindBufferMemory(buffer, memory, offset);
 	}
 
-	void Buffer::load(vk::DeviceSize offset, void *source, vk::DeviceSize size)
+	void Buffer::load(vk::DeviceSize internalOffset, void *source, vk::DeviceSize size)
 	{
-		void *data = device->mapMemory(
-			*memory,
-			offset,
-			size
-		);
-
-		memcpy(
-			data,
-			source,
-			static_cast<size_t>(size));
-
-		device->unmapMemory(*memory);
+		device->setMemory(memory, offset + internalOffset, size, source);
 	}
 
 	vk::UniqueBuffer &Buffer::getBuffer() {

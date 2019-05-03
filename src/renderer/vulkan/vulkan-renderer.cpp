@@ -7,6 +7,7 @@
 #include "validation.hpp"
 #include "device.hpp"
 #include "queue-family-indices.hpp"
+#include "command.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 	/******************************************
@@ -36,34 +37,13 @@ namespace Obtain::Graphics::Vulkan {
 			loader
 		);
 
-		surface = Device::createSurface(
-			*instance,
-			window
-		);
-		physicalDevice = Device::selectPhysicalDevice(
-			instance,
-			surface
-		);
-		device = Device::createLogicalDevice(
-			instance,
-			physicalDevice,
-			surface
-		);
+		device = std::make_unique<Device>(Device(instance, window));
 
-		indices = QueueFamilyIndices::findQueueFamilies(
-			*physicalDevice,
-			surface
-		);
-		graphicsQueue = device->getQueue(
-			indices.graphicsFamily.value(),
-			0
-		);
-		presentationQueue = device->getQueue(
-			indices.presentFamily.value(),
-			0
-		);
 
-		createCommandPool();
+		graphicsQueue = device->getGraphicsQueue();
+		presentationQueue = device->getPresentQueue();
+
+		commandPool = device->createCommandPool();
 
 		vertexBuffer = createAndLoadBuffer(static_cast<vk::DeviceSize>(obj.getBufferSize()),
 		                                   vk::BufferUsageFlagBits::eVertexBuffer, obj.getVertices().data());
@@ -73,9 +53,7 @@ namespace Obtain::Graphics::Vulkan {
 
 		swapchain = new Swapchain(
 			instance,
-			physicalDevice,
 			device,
-			surface,
 			windowSize,
 			indices,
 			commandPool,
@@ -102,7 +80,7 @@ namespace Obtain::Graphics::Vulkan {
 		while (!glfwWindowShouldClose(window)) {
 			glfwPollEvents();
 			drawFrame();
-			bool drawSuccess = swapchain->submitFrame(graphicsQueue, presentationQueue);
+			bool drawSuccess = swapchain->submitFrame(*graphicsQueue, *presentationQueue);
 			if (resizeOccurred || !drawSuccess) {
 				updateWindowSize();
 			}
@@ -148,19 +126,6 @@ namespace Obtain::Graphics::Vulkan {
 
 	}
 
-	void VulkanRenderer::createCommandPool()
-	{
-		commandPool = device->createCommandPoolUnique(
-			vk::CommandPoolCreateInfo(
-				vk::CommandPoolCreateFlags(),
-				QueueFamilyIndices::findQueueFamilies(
-					*physicalDevice,
-					surface
-				).graphicsFamily.value()
-			)
-		);
-	}
-
 	void VulkanRenderer::updateWindowSize()
 	{
 		int width = 0, height = 0;
@@ -173,9 +138,7 @@ namespace Obtain::Graphics::Vulkan {
 		delete (swapchain);
 		swapchain = new Swapchain(
 			instance,
-			physicalDevice,
 			device,
-			surface,
 			windowSize,
 			indices,
 			commandPool,
@@ -189,7 +152,6 @@ namespace Obtain::Graphics::Vulkan {
 	{
 		Buffer stagingBuffer = Buffer(
 			device,
-			physicalDevice,
 			size,
 			vk::BufferUsageFlagBits::eTransferSrc,
 			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
@@ -200,7 +162,6 @@ namespace Obtain::Graphics::Vulkan {
 		std::unique_ptr<Buffer> newBuffer = std::make_unique<Buffer>(
 			Buffer(
 				device,
-				physicalDevice,
 				size,
 				vk::BufferUsageFlagBits::eTransferDst | usageFlags,
 				vk::MemoryPropertyFlagBits::eDeviceLocal
@@ -221,41 +182,17 @@ namespace Obtain::Graphics::Vulkan {
 		vk::DeviceSize size
 	)
 	{
-		std::vector<vk::UniqueCommandBuffer> allocatedCommandBuffers = device->allocateCommandBuffersUnique(
-			vk::CommandBufferAllocateInfo(
-				*commandPool,
-				vk::CommandBufferLevel::ePrimary,
-				1u
-			)
-		);
-
-		allocatedCommandBuffers[0]->begin(
-			vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit)
-		);
-
 		vk::BufferCopy region(srcOffset, dstOffset, size);
 
-		allocatedCommandBuffers[0]->copyBuffer(
-			*src,
-			*dst,
-			1u,
-			&region
-		);
+		auto action = [&src, &dst, &region](vk::CommandBuffer commandBuffer) {
+			commandBuffer.copyBuffer(
+				*src,
+				*dst,
+				1u,
+				&region
+			);
+		};
 
-		allocatedCommandBuffers[0]->end();
-
-		vk::UniqueFence fence = device->createFenceUnique(vk::FenceCreateInfo());
-
-		vk::SubmitInfo submitInfo(
-			0u,
-			nullptr,
-			nullptr,
-			1u,
-			&allocatedCommandBuffers[0].get()
-		);
-		graphicsQueue.submit(1, &submitInfo, *fence);
-		device->waitForFences(
-			1u, &fence.get(), true, std::numeric_limits<uint64_t>::max()
-		);
+		Command::runSingleTime(device, commandPool, *graphicsQueue, action);
 	}
 }

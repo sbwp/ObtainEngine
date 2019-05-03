@@ -26,29 +26,23 @@ add_custom_command(
 add_custom_target(shaders ALL DEPENDS build/assets/shaders/frag.spv build/assets/shaders/vert.spv)
 
 add_executable(obtain src/main.cpp
-        src/renderer/renderer.cpp
-        src/renderer/renderer.hpp
-        src/renderer/vulkan/device.cpp
-        src/renderer/vulkan/device.hpp
-        src/renderer/vulkan/instance.cpp
-        src/renderer/vulkan/instance.hpp
+        src/renderer/renderer.cpp src/renderer/renderer.hpp
+        src/renderer/vulkan/device.cpp src/renderer/vulkan/device.hpp
+        src/renderer/vulkan/instance.cpp src/renderer/vulkan/instance.hpp
         src/renderer/vulkan/queue-family-indices.hpp
-        src/renderer/vulkan/shader.cpp
-        src/renderer/vulkan/shader.hpp
-        src/renderer/vulkan/swapchain.cpp
-        src/renderer/vulkan/swapchain.hpp
-        src/renderer/vulkan/swapchain-support-details.hpp
-        src/renderer/vulkan/uniform-buffer-object.hpp
-        src/renderer/vulkan/validation.cpp
-        src/renderer/vulkan/validation.hpp
-        src/renderer/vulkan/vertex.hpp
-        src/renderer/vulkan/vertex2d.hpp
-        src/renderer/vulkan/vulkan-renderer.cpp
-        src/renderer/vulkan/vulkan-renderer.hpp
-        src/renderer/shaders/basic.frag
-        src/renderer/shaders/basic.vert
-        src/renderer/shaders/shader.frag
-        src/renderer/shaders/shader.vert src/renderer/vulkan/object.cpp src/renderer/vulkan/object.hpp src/renderer/vulkan/buffer.cpp src/renderer/vulkan/buffer.hpp src/renderer/vulkan/descriptor.cpp src/renderer/vulkan/descriptor.hpp src/utils/time.cpp src/utils/time.hpp)
+        src/renderer/vulkan/shader.cpp src/renderer/vulkan/shader.hpp
+        src/renderer/vulkan/swapchain.cpp src/renderer/vulkan/swapchain.hpp
+        src/renderer/vulkan/swapchain-support-details.hpp src/renderer/vulkan/uniform-buffer-object.hpp
+        src/renderer/vulkan/validation.cpp src/renderer/vulkan/validation.hpp
+        src/renderer/vulkan/vertex.hpp src/renderer/vulkan/vertex2d.hpp
+        src/renderer/vulkan/vulkan-renderer.cpp src/renderer/vulkan/vulkan-renderer.hpp
+        src/renderer/shaders/basic.frag src/renderer/shaders/basic.vert
+        src/renderer/shaders/shader.frag src/renderer/shaders/shader.vert
+        src/renderer/vulkan/object.cpp src/renderer/vulkan/object.hpp
+        src/renderer/vulkan/buffer.cpp src/renderer/vulkan/buffer.hpp
+        src/utils/time.cpp src/utils/time.hpp
+        src/renderer/vulkan/image.cpp src/renderer/vulkan/image.hpp
+        src/renderer/vulkan/command.cpp src/renderer/vulkan/command.hpp)
 
 
 add_dependencies(obtain shaders)

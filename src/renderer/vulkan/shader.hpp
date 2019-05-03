@@ -5,25 +5,23 @@
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
+#include "device.hpp"
+
 namespace Obtain::Graphics::Vulkan {
 	class Shader {
 	public:
-		Shader(vk::UniqueDevice &device, std::string filename, vk::ShaderStageFlagBits pipelineStage);
+		Shader(std::unique_ptr<Device> &device, const std::string &filename, const vk::ShaderStageFlagBits &pipelineStage);
 
-		~Shader();
+		const vk::PipelineShaderStageCreateInfo getCreateInfo();
 
-		inline vk::PipelineShaderStageCreateInfo getCreateInfo() const
-		{ return createInfo; }
-
-		inline vk::ShaderModule getModule() const
-		{ return module; }
+		const vk::UniqueShaderModule &getModule();
 
 	private:
 		std::vector<char> code;
 		vk::ShaderStageFlagBits stage;
-		vk::ShaderModule module;
+		vk::UniqueShaderModule module;
 		vk::PipelineShaderStageCreateInfo createInfo;
-		vk::UniqueDevice &device;
+		std::unique_ptr<Device> &device;
 
 		static std::vector<char> readFile(const std::string &filename);
 	};

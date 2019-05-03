@@ -2,20 +2,20 @@
 // Created by austin on 4/22/19.
 //
 
-#ifndef OBTAIN_BUFFER_HPP
-#define OBTAIN_BUFFER_HPP
+#ifndef BUFFER_HPP
+#define BUFFER_HPP
 
 #include <vulkan/vulkan.hpp>
+
+#include "device.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 	class Buffer {
 	public:
-		Buffer(
-			vk::UniqueDevice &device, std::unique_ptr<vk::PhysicalDevice> &physicalDevice, vk::DeviceSize size,
-			vk::BufferUsageFlags usageFlags, vk::MemoryPropertyFlags propertyFlags
-		);
+		Buffer(std::unique_ptr<Device> &device, vk::DeviceSize size, const vk::BufferUsageFlags &usageFlags,
+		       const vk::MemoryPropertyFlags &propertyFlags);
 
-		void load(vk::DeviceSize offset, void *source, size_t size);
+		void load(vk::DeviceSize internalOffset, void *source, size_t size);
 
 		vk::UniqueBuffer &getBuffer();
 
@@ -27,11 +27,11 @@ namespace Obtain::Graphics::Vulkan {
 		vk::DeviceSize size;
 		vk::UniqueBuffer buffer;
 		vk::UniqueDeviceMemory memory;
+		vk::DeviceSize offset;
 
-		std::unique_ptr<vk::PhysicalDevice> &physicalDevice;
-		vk::UniqueDevice &device;
+		std::unique_ptr<Device> &device;
 	};
 }
 
 
-#endif // OBTAIN_BUFFER_HPP
+#endif // BUFFER_HPP
