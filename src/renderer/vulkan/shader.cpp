@@ -6,17 +6,11 @@
 #include "shader.hpp"
 
 namespace Obtain::Graphics::Vulkan {
-	Shader::Shader(vk::UniqueDevice &device, std::string filename, vk::ShaderStageFlagBits pipelineStage)
+	Shader::Shader(std::unique_ptr<Device> &device, const std::string &filename, const vk::ShaderStageFlagBits &pipelineStage)
 		: device(device), stage(pipelineStage), code(readFile(filename))
 	{
 		try {
-			module = device->createShaderModule(
-				vk::ShaderModuleCreateInfo(
-					vk::ShaderModuleCreateFlags(),
-					code.size(),
-					reinterpret_cast<uint32_t *>(code.data())
-				)
-			);
+			module = device->createShaderModule(code.size(), code.data());
 		} catch (std::exception const &e) {
 			std::cerr << "Failed to create shader module" << std::endl;
 			throw e;
@@ -25,18 +19,20 @@ namespace Obtain::Graphics::Vulkan {
 		createInfo = vk::PipelineShaderStageCreateInfo(
 			vk::PipelineShaderStageCreateFlags(),
 			stage,
-			module,
+			*module,
 			"main",
 			nullptr
 		);
 	}
 
-	Shader::~Shader()
+	const vk::PipelineShaderStageCreateInfo Shader::getCreateInfo()
 	{
-		device->destroyShaderModule(
-			module,
-			nullptr
-		);
+		return createInfo;
+	}
+
+	const vk::UniqueShaderModule &Shader::getModule()
+	{
+		return module;
 	}
 
 	std::vector<char> Shader::readFile(const std::string &filename)

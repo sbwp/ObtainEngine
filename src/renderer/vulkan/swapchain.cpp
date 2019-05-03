@@ -9,7 +9,6 @@
 #include "shader.hpp"
 #include "queue-family-indices.hpp"
 #include "vertex2d.hpp"
-#include "descriptor.hpp"
 #include "uniform-buffer-object.hpp"
 #include "../../utils/time.hpp"
 
@@ -20,9 +19,7 @@ namespace Obtain::Graphics::Vulkan {
 	 ******************************************/
 	Swapchain::Swapchain(
 		vk::UniqueInstance &instance,
-		std::unique_ptr<vk::PhysicalDevice> &physicalDevice,
-		vk::UniqueDevice &device,
-		vk::UniqueSurfaceKHR &surface,
+		std::unique_ptr<Device> &device,
 		std::array<uint32_t, 2> windowSize,
 		QueueFamilyIndices indices,
 		vk::UniqueCommandPool &commandPool,
@@ -32,16 +29,11 @@ namespace Obtain::Graphics::Vulkan {
 		:
 		instance(instance),
 		device(device),
-		physicalDevice(physicalDevice),
-		surface(surface),
 		commandPool(commandPool),
 		vertexBuffer(vertexBuffer),
 		indexBuffer(indexBuffer)
 	{
-		SwapchainSupportDetails swapchainSupport = SwapchainSupportDetails::querySwapchainSupport(
-			*physicalDevice,
-			surface
-		);
+		auto swapchainSupport = device->querySwapchainSupport();
 
 		vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapchainSupport.formats);
 		format = surfaceFormat.format;
@@ -51,127 +43,46 @@ namespace Obtain::Graphics::Vulkan {
 			windowSize
 		);
 
-		uint32_t imageCount = swapchainSupport.capabilities
-			                      .minImageCount + 1;
-		if (swapchainSupport.capabilities
-			    .maxImageCount > 0 &&
-		    imageCount > swapchainSupport.capabilities
-			    .maxImageCount
-			) {
-			imageCount = swapchainSupport.capabilities
-				.maxImageCount;
-		}
+		swapchain = device->createSwapchain(surfaceFormat, extent, presentMode);
+		images = device->getSwapchainImages(swapchain);
+		imageViews = device->generateSwapchainImageViews(images, format);
 
-		vk::SharingMode sharingMode = vk::SharingMode::eConcurrent;
-		uint32_t queueFamilyIndexCount = 2;
-		uint32_t queueFamilyIndices[] = {
-			indices.graphicsFamily
-				.value(), indices.presentFamily
-				.value()
-		};
-		uint32_t *pQueueFamilyIndices = queueFamilyIndices;
-
-		if (indices.graphicsFamily == indices.presentFamily) {
-			sharingMode = vk::SharingMode::eExclusive;
-			queueFamilyIndexCount = 0;
-			pQueueFamilyIndices = nullptr;
-		}
-
-		swapchain = device->createSwapchainKHRUnique(
-			vk::SwapchainCreateInfoKHR(
-				vk::SwapchainCreateFlagsKHR(),
-				*surface,
-				imageCount,
-				format,
-				surfaceFormat.colorSpace,
-				extent,
-				1U,
-				vk::ImageUsageFlagBits::eColorAttachment,
-				sharingMode,
-				queueFamilyIndexCount,
-				pQueueFamilyIndices,
-				swapchainSupport.capabilities
-					.currentTransform,
-				vk::CompositeAlphaFlagBitsKHR::eOpaque,
-				presentMode,
-				true,
-				nullptr
-			)
-		);
-		images = device->getSwapchainImagesKHR(*swapchain);
-		imageViews.resize(images.size());
-
-		for (size_t i = 0; i < images.size(); i++) {
-			imageViews[i] = device->createImageView(
-				vk::ImageViewCreateInfo(
-					vk::ImageViewCreateFlags(),
-					images[i],
-					vk::ImageViewType::e2D,
-					format,
-					vk::ComponentMapping(
-						vk::ComponentSwizzle::eIdentity, // r
-						vk::ComponentSwizzle::eIdentity, // g
-						vk::ComponentSwizzle::eIdentity, // b
-						vk::ComponentSwizzle::eIdentity  // a
-					),
-					vk::ImageSubresourceRange(
-						vk::ImageAspectFlagBits::eColor,
-						0U, // base mip level
-						1U, // level count
-						0U, // base array level
-						1U  // layer count
-					)
-				)
-			);
-		}
-		createRenderPass();
-		descriptorSetLayout = Descriptor::createDescriptorSetLayout(device);
+		renderPass = device->createRenderPass(format);
+		descriptorSetLayout = device->createDescriptorSetLayout();
+		pipelineLayout = device->createPipelineLayout(descriptorSetLayout);
 		createPipeline();
-		createFramebuffers();
+		framebuffers = device->createFramebuffers(imageViews, renderPass, extent);
 		createUniformBuffers();
-		createDescriptorPool();
-		createDescriptorSets();
+		descriptorPool = device->createDescriptorPool(static_cast<uint32_t>(images.size()));
+		descriptorSets = device->createDescriptorSets(static_cast<uint32_t>(images.size()),
+		                            descriptorSetLayout,
+		                            descriptorPool,
+		                            uniformBuffers);
 		createCommandBuffers();
 
 		for (size_t i = 0; i < MaxFramesInFlight; i++) {
-			imageReady[i] = device->createSemaphoreUnique(vk::SemaphoreCreateInfo());
-			renderFinished[i] = device->createSemaphoreUnique(vk::SemaphoreCreateInfo());
-			outOfFlight[i] = device->createFenceUnique(
-				vk::FenceCreateInfo(
-					vk::FenceCreateFlagBits::eSignaled
-				)
-			);
+			imageReady[i] = device->createSemaphore();
+			renderFinished[i] = device->createSemaphore();
+			outOfFlight[i] = device->createFence(true);
 		}
 	}
 
 	Swapchain::~Swapchain()
 	{
 		device->waitIdle();
-		for (auto imageView : imageViews) {
-			device->destroyImageView(imageView);
-		}
+		device->destroyImageViews(imageViews);
 	}
 
 	bool Swapchain::submitFrame(
-		vk::Queue graphicsQueue,
-		vk::Queue presentationQueue
+		vk::Queue &graphicsQueue,
+		vk::Queue &presentationQueue
 	)
 	{
-		device->waitForFences(
-			1,
-			&outOfFlight[currentFrame].get(),
-			true,
-			std::numeric_limits<uint64_t>::max()
-		);
-		device->resetFences(1, &outOfFlight[currentFrame].get());
+		device->waitForFence(outOfFlight[currentFrame]);
+		device->resetFence(outOfFlight[currentFrame]);
 		uint32_t imageIndex;
 		try {
-			imageIndex = device->acquireNextImageKHR(
-				*swapchain,
-				std::numeric_limits<uint64_t>::max(),
-				*imageReady[currentFrame],
-				nullptr
-			).value;
+			imageIndex = device->nextImage(swapchain, imageReady[currentFrame]);
 		} catch (vk::OutOfDateKHRError &error) {
 			return false;
 		}
@@ -284,234 +195,11 @@ namespace Obtain::Graphics::Vulkan {
 		}
 	}
 
-	void Swapchain::createPipeline()
-	{
-		Shader *vertShader = new Shader(
-			device,
-			"assets/shaders/vert.spv",
-			vk::ShaderStageFlagBits::eVertex
-		);
-		Shader *fragShader = new Shader(
-			device,
-			"assets/shaders/frag.spv",
-			vk::ShaderStageFlagBits::eFragment
-		);
-
-		auto bindingDescription = Vertex2D::getBindingDescription();
-		auto attributeDescriptions = Vertex2D::getAttributeDescriptions();
-
-		vk::PipelineVertexInputStateCreateInfo vertexInputStateCreateInfo(
-			vk::PipelineVertexInputStateCreateFlags(),
-			1,
-			&bindingDescription,
-			static_cast<uint32_t>(attributeDescriptions.size()),
-			attributeDescriptions.data()
-		);
-
-		vk::PipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo(
-			vk::PipelineInputAssemblyStateCreateFlags(),
-			vk::PrimitiveTopology::eTriangleList,
-			false
-		);
-
-		vk::Viewport viewport(
-			0.0f,
-			0.0f,
-			(float) extent.width,
-			(float) extent.height,
-			0.0f,
-			0.0f
-		);
-
-		vk::Rect2D scissor(
-			vk::Offset2D(
-				0,
-				0
-			),
-			extent
-		);
-
-		vk::PipelineViewportStateCreateInfo viewportStateCreateInfo(
-			vk::PipelineViewportStateCreateFlags(),
-			1,
-			&viewport,
-			1,
-			&scissor
-		);
-
-		vk::PipelineRasterizationStateCreateInfo rasterizerCreateInfo(
-			vk::PipelineRasterizationStateCreateFlags(),
-			false,
-			false,
-			vk::PolygonMode::eFill,
-			vk::CullModeFlagBits::eBack,
-			vk::FrontFace::eCounterClockwise,
-			false,
-			0.0f,
-			0.0f,
-			0.0f,
-			1.0f
-		);
-
-		// temporarily disabled
-		vk::PipelineMultisampleStateCreateInfo multisamplingCreateInfo(
-			vk::PipelineMultisampleStateCreateFlags(),
-			vk::SampleCountFlagBits::e1
-		);
-
-		vk::PipelineColorBlendAttachmentState colorBlendAttachmentState(
-			false,
-			vk::BlendFactor::eOne,
-			vk::BlendFactor::eZero,
-			vk::BlendOp::eAdd,
-			vk::BlendFactor::eOne,
-			vk::BlendFactor::eZero,
-			vk::BlendOp::eAdd,
-			vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-			vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
-		);
-
-		vk::PipelineColorBlendStateCreateInfo colorBlendingCreateInfo(
-			vk::PipelineColorBlendStateCreateFlags(),
-			false,
-			vk::LogicOp::eCopy,
-			1,
-			&colorBlendAttachmentState
-		);
-
-		std::vector<vk::DynamicState> dynamicStates = {
-			vk::DynamicState::eViewport,
-			vk::DynamicState::eLineWidth
-		};
-
-		vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo(
-			vk::PipelineDynamicStateCreateFlags(),
-			static_cast<uint32_t>(dynamicStates.size()),
-			dynamicStates.data()
-		);
-
-		pipelineLayout = device->createPipelineLayoutUnique(
-			vk::PipelineLayoutCreateInfo(
-				vk::PipelineLayoutCreateFlags(),
-				1,
-				&descriptorSetLayout.get(),
-				0,
-				nullptr
-			)
-		);
-
-		vk::PipelineShaderStageCreateInfo shaderCreateInfos[] = {
-			vertShader->getCreateInfo(),
-			fragShader->getCreateInfo()
-		};
-
-		pipeline = device->createGraphicsPipelineUnique(
-			nullptr,
-			vk::GraphicsPipelineCreateInfo(
-				vk::PipelineCreateFlags(),
-				2,
-				shaderCreateInfos,
-				&vertexInputStateCreateInfo,
-				&inputAssemblyCreateInfo,
-				nullptr,
-				&viewportStateCreateInfo,
-				&rasterizerCreateInfo,
-				&multisamplingCreateInfo,
-				nullptr,
-				&colorBlendingCreateInfo,
-				nullptr,
-				*pipelineLayout,
-				*renderPass,
-				0
-			)
-		);
-
-		delete (vertShader);
-		delete (fragShader);
-	}
-
-	void Swapchain::createRenderPass()
-	{
-		vk::AttachmentDescription colorAttachment(
-			vk::AttachmentDescriptionFlags(),
-			format,
-			vk::SampleCountFlagBits::e1,
-			vk::AttachmentLoadOp::eClear,
-			vk::AttachmentStoreOp::eStore,
-			vk::AttachmentLoadOp::eDontCare,
-			vk::AttachmentStoreOp::eDontCare,
-			vk::ImageLayout::eUndefined,
-			vk::ImageLayout::ePresentSrcKHR
-		);
-
-		vk::AttachmentReference colorAttachmentRef(
-			0,
-			vk::ImageLayout::eColorAttachmentOptimal
-		);
-
-		vk::SubpassDescription subpassDescription(
-			vk::SubpassDescriptionFlags(),
-			vk::PipelineBindPoint::eGraphics,
-			0,
-			nullptr,
-			1,
-			&colorAttachmentRef
-		);
-
-		vk::SubpassDependency dependency(
-			VK_SUBPASS_EXTERNAL,
-			0,
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			vk::AccessFlags(),
-			vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite,
-			vk::DependencyFlags()
-		);
-
-		renderPass = device->createRenderPassUnique(
-			vk::RenderPassCreateInfo(
-				vk::RenderPassCreateFlags(),
-				1,
-				&colorAttachment,
-				1,
-				&subpassDescription,
-				1,
-				&dependency
-			)
-		);
-	}
-
-	void Swapchain::createFramebuffers()
-	{
-		size_t size = imageViews.size();
-
-		// Resize up front to avoid multiple resizings
-		framebuffers.resize(size);
-
-		for (size_t i = 0; i < size; i++) {
-			framebuffers[i] = device->createFramebufferUnique(
-				vk::FramebufferCreateInfo(
-					vk::FramebufferCreateFlags(),
-					*renderPass,
-					1,
-					&imageViews[i],
-					extent.width,
-					extent.height,
-					1
-				)
-			);
-		}
-	}
-
 	void Swapchain::createCommandBuffers()
 	{
-		commandBuffers = device->allocateCommandBuffersUnique(
-			vk::CommandBufferAllocateInfo(
-				*commandPool,
-				vk::CommandBufferLevel::ePrimary,
-				(uint32_t) framebuffers.size()
-			)
-		);
+		commandBuffers = device->allocateCommandBuffers(commandPool,
+		                                               vk::CommandBufferLevel::ePrimary,
+		                                               static_cast<uint32_t>(framebuffers.size()));
 
 		for (size_t i = 0; i < commandBuffers.size(); i++) {
 			auto &commandBuffer = commandBuffers[i];
@@ -562,6 +250,30 @@ namespace Obtain::Graphics::Vulkan {
 		}
 	}
 
+	void Swapchain::createPipeline() {
+		Shader *vertShader = new Shader(
+			device,
+			"assets/shaders/vert.spv",
+			vk::ShaderStageFlagBits::eVertex
+		);
+		Shader *fragShader = new Shader(
+			device,
+			"assets/shaders/frag.spv",
+			vk::ShaderStageFlagBits::eFragment
+		);
+
+		vk::PipelineShaderStageCreateInfo shaderCreateInfos[] = {
+			vertShader->getCreateInfo(),
+			fragShader->getCreateInfo()
+		};
+
+		pipeline = device->createGraphicsPipeline(extent,pipelineLayout, renderPass,
+		                                          shaderCreateInfos);
+
+		delete (vertShader);
+		delete (fragShader);
+	}
+
 	void Swapchain::createUniformBuffers()
 	{
 		uniformBuffers.resize(images.size());
@@ -569,56 +281,11 @@ namespace Obtain::Graphics::Vulkan {
 			uniformBuffers[i] = std::make_unique<Buffer>(
 				Buffer(
 					device,
-					physicalDevice,
 					sizeof(UniformBufferObject),
 					vk::BufferUsageFlagBits::eUniformBuffer,
 					vk::MemoryPropertyFlagBits::eHostVisible |
 					vk::MemoryPropertyFlagBits::eHostCoherent)
 			);
-		}
-	}
-
-	void Swapchain::createDescriptorPool()
-	{
-		vk::DescriptorPoolSize size(vk::DescriptorType::eUniformBuffer,
-		                                static_cast<uint32_t>(images.size()));
-
-		vk::DescriptorPoolCreateInfo createInfo(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
-		                                        static_cast<uint32_t>(images.size()),
-		                                        1,
-		                                        &size);
-
-		descriptorPool = device->createDescriptorPoolUnique(createInfo);
-	}
-
-	void Swapchain::createDescriptorSets()
-	{
-		std::vector<vk::DescriptorSetLayout> layouts(images.size(), *descriptorSetLayout);
-
-		vk::DescriptorSetAllocateInfo allocateInfo(*descriptorPool,
-		                                           static_cast<uint32_t>(images.size()),
-		                                           layouts.data());
-
-		descriptorSets = device->allocateDescriptorSetsUnique(allocateInfo);
-
-		for (size_t i = 0; i < images.size(); i++) {
-			vk::DescriptorBufferInfo bufferInfo(*(uniformBuffers[i]->getBuffer()),
-			                                    0,
-			                                    sizeof(UniformBufferObject));
-
-			vk::WriteDescriptorSet writeOp(*(descriptorSets[i]),
-			                               0,
-			                               0,
-			                               1,
-			                               vk::DescriptorType::eUniformBuffer,
-			                               nullptr,
-			                               &bufferInfo,
-			                               nullptr);
-
-			device->updateDescriptorSets(1,
-			                             &writeOp,
-			                             0,
-			                             nullptr);
 		}
 	}
 

@@ -6,15 +6,14 @@
 
 #include "queue-family-indices.hpp"
 #include "buffer.hpp"
+#include "device.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 	class Swapchain {
 	public:
 		Swapchain(
 			vk::UniqueInstance &instance,
-			std::unique_ptr<vk::PhysicalDevice> &physicalDevice,
-			vk::UniqueDevice &device,
-			vk::UniqueSurfaceKHR &surface,
+			std::unique_ptr<Device> &device,
 			std::array<uint32_t, 2> windowSize,
 			QueueFamilyIndices indices,
 			vk::UniqueCommandPool &commandPool,
@@ -25,8 +24,8 @@ namespace Obtain::Graphics::Vulkan {
 		~Swapchain();
 
 		bool submitFrame(
-			vk::Queue graphicsQueue,
-			vk::Queue presentationQueue
+			vk::Queue &graphicsQueue,
+			vk::Queue &presentationQueue
 		);
 
 		inline vk::UniqueSwapchainKHR &getSwapchain()
@@ -49,9 +48,7 @@ namespace Obtain::Graphics::Vulkan {
 		std::vector<vk::UniqueFramebuffer> framebuffers;
 
 		vk::UniqueInstance &instance;
-		vk::UniqueDevice &device;
-		std::unique_ptr<vk::PhysicalDevice> &physicalDevice;
-		vk::UniqueSurfaceKHR &surface;
+		std::unique_ptr<Device> &device;
 
 		vk::UniquePipelineLayout pipelineLayout;
 		vk::UniqueDescriptorSetLayout descriptorSetLayout;
@@ -85,13 +82,9 @@ namespace Obtain::Graphics::Vulkan {
 			std::array<uint32_t, 2> windowSize
 		);
 
-		void createPipeline();
-		void createRenderPass();
-		void createFramebuffers();
 		void createUniformBuffers();
 		void createCommandBuffers();
-		void createDescriptorPool();
-		void createDescriptorSets();
+		void createPipeline();
 
 		void updateUniformBuffer(uint32_t currentImage);
 	};
