@@ -3,6 +3,7 @@
 //
 
 #include "buffer.hpp"
+#include "command.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 	Buffer::Buffer(std::unique_ptr<Device> &device, vk::DeviceSize size, const vk::BufferUsageFlags &usageFlags,
@@ -38,5 +39,14 @@ namespace Obtain::Graphics::Vulkan {
 
 	vk::DeviceSize Buffer::getSize() {
 		return size;
+	}
+
+	void Buffer::copyToImage(vk::UniqueCommandPool &commandPool, const vk::Queue &graphicsQueue, vk::UniqueImage &image,
+	                         const vk::BufferImageCopy &region, const vk::ImageSubresourceLayers &subresource) {
+		auto action = [&image, this, &region](vk::CommandBuffer commandBuffer){
+			commandBuffer.copyBufferToImage(*buffer, *image,
+				vk::ImageLayout::eTransferDstOptimal, 1, &region);
+		};
+		Command::runSingleTime(device, commandPool, graphicsQueue, action);
 	}
 }

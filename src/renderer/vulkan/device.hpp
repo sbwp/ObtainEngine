@@ -26,12 +26,15 @@ namespace Obtain::Graphics::Vulkan {
 		                                       const vk::Extent2D &extent,
 		                                       vk::PresentModeKHR presentMode);
 		std::vector<vk::Image> getSwapchainImages(vk::UniqueSwapchainKHR &swapchain);
-		std::vector<vk::ImageView> generateSwapchainImageViews(std::vector<vk::Image> &images, vk::Format format);
+		std::vector<vk::ImageView> generateSwapchainImageViews(std::vector<vk::Image> &images, const vk::Format &format);
 		void destroyImageViews(std::vector<vk::ImageView> imageViews);
 		uint32_t nextImage(vk::UniqueSwapchainKHR &swapchain, vk::UniqueSemaphore &triggerSemaphore);
 		uint32_t nextImage(vk::UniqueSwapchainKHR &swapchain, vk::UniqueFence &triggerFence);
 		vk::UniqueImage createImage(const vk::Extent3D &extent, const vk::Format &format,
 		                            const vk::ImageTiling &tiling, const vk::ImageUsageFlags &usageFlags);
+		vk::UniqueImageView createImageView(vk::UniqueImage &image, const vk::Format &format);
+		vk::UniqueSampler createSampler();
+
 		vk::MemoryRequirements getImageMemoryRequirements(vk::UniqueImage &image);
 		void bindImageMemory(vk::UniqueImage &image, vk::UniqueDeviceMemory &memory, uint32_t offset);
 

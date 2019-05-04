@@ -23,6 +23,9 @@ namespace Obtain::Graphics::Vulkan {
 
 		vk::DeviceSize getSize();
 
+		void copyToImage(vk::UniqueCommandPool &commandPool, const vk::Queue &graphicsQueue, vk::UniqueImage &image,
+		                 const vk::BufferImageCopy &region, const vk::ImageSubresourceLayers &subresource);
+
 	private:
 		vk::DeviceSize size;
 		vk::UniqueBuffer buffer;
