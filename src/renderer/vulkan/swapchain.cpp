@@ -8,7 +8,7 @@
 #include "swapchain-support-details.hpp"
 #include "shader.hpp"
 #include "queue-family-indices.hpp"
-#include "vertex2d.hpp"
+#include "vertex.hpp"
 #include "uniform-buffer-object.hpp"
 #include "../../utils/time.hpp"
 
@@ -24,14 +24,13 @@ namespace Obtain::Graphics::Vulkan {
 		QueueFamilyIndices indices,
 		vk::UniqueCommandPool &commandPool,
 		std::unique_ptr<Buffer> &vertexBuffer,
-		std::unique_ptr<Buffer> &indexBuffer
+		std::unique_ptr<Buffer> &indexBuffer,
+		std::unique_ptr<Image> &textureImage,
+		vk::UniqueSampler &sampler
 	)
 		:
-		instance(instance),
-		device(device),
-		commandPool(commandPool),
-		vertexBuffer(vertexBuffer),
-		indexBuffer(indexBuffer)
+		instance(instance), device(device), commandPool(commandPool), vertexBuffer(vertexBuffer),
+		indexBuffer(indexBuffer), textureImage(textureImage), sampler(sampler)
 	{
 		auto swapchainSupport = device->querySwapchainSupport();
 
@@ -46,17 +45,21 @@ namespace Obtain::Graphics::Vulkan {
 		swapchain = device->createSwapchain(surfaceFormat, extent, presentMode);
 		images = device->getSwapchainImages(swapchain);
 		imageViews = device->generateSwapchainImageViews(images, format);
-
-		renderPass = device->createRenderPass(format);
+		depthImage = std::make_unique<Image>(Image::createDepthImage(device, extent,
+		                                                             commandPool));
+		renderPass = device->createRenderPass(format, depthImage->getFormat());
 		descriptorSetLayout = device->createDescriptorSetLayout();
 		pipelineLayout = device->createPipelineLayout(descriptorSetLayout);
 		createPipeline();
-		framebuffers = device->createFramebuffers(imageViews, renderPass, extent);
+		framebuffers = device->createFramebuffers(imageViews, depthImage->getView(),
+		                                          renderPass, extent);
 		createUniformBuffers();
 		descriptorPool = device->createDescriptorPool(static_cast<uint32_t>(images.size()));
 		descriptorSets = device->createDescriptorSets(static_cast<uint32_t>(images.size()),
 		                            descriptorSetLayout,
 		                            descriptorPool,
+		                            sampler,
+		                            textureImage->getView(),
 		                            uniformBuffers);
 		createCommandBuffers();
 
@@ -211,9 +214,10 @@ namespace Obtain::Graphics::Vulkan {
 				)
 			);
 
-			vk::ClearValue clearColor(
-				vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f})
-			);
+			std::array<vk::ClearValue, 2> clearValues = {
+				vk::ClearValue(vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f})),
+				vk::ClearValue(vk::ClearDepthStencilValue(1.0f, 0))
+			};
 
 			commandBuffer->beginRenderPass(
 				vk::RenderPassBeginInfo(
@@ -223,8 +227,8 @@ namespace Obtain::Graphics::Vulkan {
 						{0, 0},
 						extent
 					),
-					1,
-					&clearColor
+					clearValues.size(),
+					clearValues.data()
 				),
 				vk::SubpassContents::eInline
 			);

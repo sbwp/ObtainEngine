@@ -5,6 +5,7 @@
 #include "image.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
+
 #include <stb_image.h>
 
 #include "buffer.hpp"
@@ -14,10 +15,10 @@
 #define TEXTURE_LOCATION "assets/textures/"
 
 namespace Obtain::Graphics::Vulkan {
-	Image::Image(std::unique_ptr<Device> &device, vk::UniqueSampler &sampler,
-	             uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling,
+	Image::Image(std::unique_ptr<Device> &device, uint32_t width, uint32_t height,
+	             vk::Format format, vk::ImageTiling tiling, const vk::ImageAspectFlags &aspectMask,
 	             const vk::ImageUsageFlags &usageFlags, const vk::MemoryPropertyFlags &propertyFlags)
-	             : device(device), sampler(sampler)
+		: device(device), format(format)
 	{
 		vk::Extent3D extent(width, height, 1u);
 
@@ -27,11 +28,10 @@ namespace Obtain::Graphics::Vulkan {
 		auto memoryType = device->findMemoryType(memoryRequirements.memoryTypeBits, propertyFlags);
 		memory = device->allocateMemory(memoryRequirements.size, memoryType);
 		device->bindImageMemory(image, memory, 0);
-		view = device->createImageView(image, format);
+		view = device->createImageView(image, format, aspectMask);
 	}
 
-	Image Image::createTextureImage(std::unique_ptr<Device> &device, vk::UniqueSampler &sampler,
-	                                vk::UniqueCommandPool &pool, const vk::Queue &graphicsQueue,
+	Image Image::createTextureImage(std::unique_ptr<Device> &device, vk::UniqueCommandPool &pool,
 	                                const std::string &file)
 	{
 		std::string filePath = TEXTURE_LOCATION + file;
@@ -59,28 +59,59 @@ namespace Obtain::Graphics::Vulkan {
 		stbi_image_free(pixels);
 
 		auto image = Image(device,
-		             sampler,
-		             width,
-		             height,
-		             vk::Format::eR8G8B8A8Unorm,
-		             vk::ImageTiling::eOptimal,
-		             vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
-		             vk::MemoryPropertyFlagBits::eDeviceLocal);
+		                   width,
+		                   height,
+		                   vk::Format::eR8G8B8A8Unorm,
+		                   vk::ImageTiling::eOptimal,
+		                   vk::ImageAspectFlagBits::eColor,
+		                   vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+		                   vk::MemoryPropertyFlagBits::eDeviceLocal);
 
-		image.transitionLayout(pool, graphicsQueue, vk::Format::eR8G8B8A8Unorm,
+		image.transitionLayout(pool, *device->getGraphicsQueue(),
 		                       vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
 
-		image.copyFromBuffer(pool, graphicsQueue, stagingBuffer,
+		image.copyFromBuffer(pool, *device->getGraphicsQueue(), stagingBuffer,
 		                     static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 
-		image.transitionLayout(pool, graphicsQueue, vk::Format::eR8G8B8A8Unorm,
-			vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
+		image.transitionLayout(pool, *device->getGraphicsQueue(),
+		                       vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
 
 		return image;
 	}
 
+	Image Image::createDepthImage(std::unique_ptr<Device> &device, const vk::Extent2D &extent,
+	                              vk::UniqueCommandPool &pool)
+	{
+		vk::DeviceSize width = extent.width, height = extent.height;
+		auto format = findSupportedFormat(device,
+		                                  {
+			                                  vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint,
+			                                  vk::Format::eD24UnormS8Uint
+		                                  },
+		                                  vk::ImageTiling::eOptimal,
+		                                  vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+
+		auto image = Image(device,
+		                   width, height,
+		                   format,
+		                   vk::ImageTiling::eOptimal,
+		                   vk::ImageAspectFlagBits::eDepth,
+		                   vk::ImageUsageFlagBits::eDepthStencilAttachment,
+		                   vk::MemoryPropertyFlagBits::eDeviceLocal);
+
+		image.transitionLayout(pool, *device->getGraphicsQueue(),
+		                       vk::ImageLayout::eUndefined,
+		                       vk::ImageLayout::eDepthStencilAttachmentOptimal);
+		return image;
+	}
+
+	vk::UniqueImageView &Image::getView()
+	{
+		return view;
+	}
+
 	void Image::transitionLayout(
-		vk::UniqueCommandPool &commandPool, const vk::Queue &graphicsQueue, const vk::Format &format,
+		vk::UniqueCommandPool &commandPool, const vk::Queue &graphicsQueue,
 		const vk::ImageLayout &oldLayout, const vk::ImageLayout &newLayout)
 	{
 
@@ -92,18 +123,19 @@ namespace Obtain::Graphics::Vulkan {
 			                               VK_QUEUE_FAMILY_IGNORED,
 			                               VK_QUEUE_FAMILY_IGNORED,
 			                               *image,
-			                               vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor,
-			                                                         0u,
-			                                                         1u,
-			                                                         0u,
-			                                                         1u));
+			                               vk::ImageSubresourceRange(
+				                               aspectMaskForLayout(newLayout),
+				                               0u,
+				                               1u,
+				                               0u,
+				                               1u));
 
 			commandBuffer.pipelineBarrier(pipelineStageForLayout(oldLayout),
 			                              pipelineStageForLayout(newLayout),
-			                               vk::DependencyFlags(),
-			                               0u, nullptr,
-			                               0u, nullptr,
-			                               1u, &barrier);
+			                              vk::DependencyFlags(),
+			                              0u, nullptr,
+			                              0u, nullptr,
+			                              1u, &barrier);
 		};
 
 		Command::runSingleTime(device, commandPool, graphicsQueue, action);
@@ -123,25 +155,87 @@ namespace Obtain::Graphics::Vulkan {
 		                   region, subresource);
 	}
 
+	bool Image::hasStencilComponent()
+	{
+		return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
+	}
+
+	vk::Format &Image::getFormat()
+	{
+		return format;
+	}
+
+	/****************************************************
+	 ******************* Private ************************
+	 ****************************************************/
 
 	const vk::AccessFlags Image::accessMaskForLayout(const vk::ImageLayout &layout)
 	{
-		switch(layout) {
-			case vk::ImageLayout::eUndefined: return vk::AccessFlags();
-			case vk::ImageLayout::eTransferDstOptimal: return vk::AccessFlagBits::eTransferWrite;
-			case vk::ImageLayout::eShaderReadOnlyOptimal: return vk::AccessFlagBits::eShaderRead;
-			default: throw std::invalid_argument("unsupported image layout");
+		switch (layout) {
+			case vk::ImageLayout::eUndefined:
+				return vk::AccessFlags();
+			case vk::ImageLayout::eTransferDstOptimal:
+				return vk::AccessFlagBits::eTransferWrite;
+			case vk::ImageLayout::eShaderReadOnlyOptimal:
+				return vk::AccessFlagBits::eShaderRead;
+			case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+				return vk::AccessFlagBits::eDepthStencilAttachmentRead |
+					vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+			default:
+				throw std::invalid_argument("unsupported image layout");
 		}
 	}
 
 	const vk::PipelineStageFlags Image::pipelineStageForLayout(const vk::ImageLayout &layout)
 	{
-		switch(layout) {
-			case vk::ImageLayout::eUndefined: return vk::PipelineStageFlagBits::eTopOfPipe;
-			case vk::ImageLayout::eTransferDstOptimal: return vk::PipelineStageFlagBits::eTransfer;
-			case vk::ImageLayout::eShaderReadOnlyOptimal: return vk::PipelineStageFlagBits::eFragmentShader;
-			default: throw std::invalid_argument("unsupported image layout");
+		switch (layout) {
+			case vk::ImageLayout::eUndefined:
+				return vk::PipelineStageFlagBits::eTopOfPipe;
+			case vk::ImageLayout::eTransferDstOptimal:
+				return vk::PipelineStageFlagBits::eTransfer;
+			case vk::ImageLayout::eShaderReadOnlyOptimal:
+				return vk::PipelineStageFlagBits::eFragmentShader;
+			case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+				return vk::PipelineStageFlagBits::eEarlyFragmentTests;
+			default:
+				throw std::invalid_argument("unsupported image layout");
 		}
+	}
+
+	const vk::ImageAspectFlags Image::aspectMaskForLayout(const vk::ImageLayout &layout)
+	{
+		switch (layout) {
+			case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+				return vk::ImageAspectFlagBits::eDepth;
+			default:
+				return vk::ImageAspectFlagBits::eColor;
+		}
+	}
+
+	const vk::Format Image::findSupportedFormat(std::unique_ptr<Device> &device,
+	                                            const std::vector<vk::Format> &candidates, vk::ImageTiling tiling,
+	                                            vk::FormatFeatureFlags features)
+	{
+		for (vk::Format format : candidates) {
+			auto properties = device->getFormatProperties(format);
+
+			vk::FormatFeatureFlags desired;
+			switch (tiling) {
+				case vk::ImageTiling::eLinear:
+					desired = properties.linearTilingFeatures;
+					break;
+				case vk::ImageTiling::eOptimal:
+					desired = properties.optimalTilingFeatures;
+					break;
+				default:
+					continue;
+			}
+
+			if ((desired & features) == features) {
+				return format;
+			}
+		}
+		throw std::runtime_error("failed to find supported format");
 	}
 
 }

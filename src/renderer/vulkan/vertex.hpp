@@ -30,25 +30,14 @@ namespace Obtain::Graphics::Vulkan {
 
 		static std::array<vk::VertexInputAttributeDescription, 3> getAttributeDescriptions()
 		{
-			std::array<vk::VertexInputAttributeDescription, 3> attributeDescriptions = {};
-
-			attributeDescriptions[0].binding = 0;
-			attributeDescriptions[0].location = 0;
-			attributeDescriptions[0].format = vk::Format::eR32G32B32Sfloat;
-			attributeDescriptions[0].offset = offsetof(Vertex,
-			                                           pos);
-
-			attributeDescriptions[1].binding = 0;
-			attributeDescriptions[1].location = 1;
-			attributeDescriptions[1].format = vk::Format::eR32G32B32Sfloat;
-			attributeDescriptions[1].offset = offsetof(Vertex,
-			                                           color);
-
-			attributeDescriptions[2].binding = 0;
-			attributeDescriptions[2].location = 2;
-			attributeDescriptions[2].format = vk::Format::eR32G32B32Sfloat;
-			attributeDescriptions[2].offset = offsetof(Vertex,
-			                                           texCoord);
+			std::array<vk::VertexInputAttributeDescription, 3> attributeDescriptions = {
+				vk::VertexInputAttributeDescription(0, 0,
+				                                    vk::Format::eR32G32B32Sfloat, offsetof(Vertex, pos)),
+				vk::VertexInputAttributeDescription(1, 0,
+				                                    vk::Format::eR32G32B32Sfloat, offsetof(Vertex, color)),
+				vk::VertexInputAttributeDescription(2, 0,
+				                                    vk::Format::eR32G32Sfloat, offsetof(Vertex, texCoord))
+			};
 
 			return attributeDescriptions;
 		}

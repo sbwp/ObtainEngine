@@ -34,7 +34,7 @@ add_executable(obtain src/main.cpp
         src/renderer/vulkan/swapchain.cpp src/renderer/vulkan/swapchain.hpp
         src/renderer/vulkan/swapchain-support-details.hpp src/renderer/vulkan/uniform-buffer-object.hpp
         src/renderer/vulkan/validation.cpp src/renderer/vulkan/validation.hpp
-        src/renderer/vulkan/vertex.hpp src/renderer/vulkan/vertex2d.hpp
+        src/renderer/vulkan/vertex.hpp src/renderer/vulkan/vertex.hpp
         src/renderer/vulkan/vulkan-renderer.cpp src/renderer/vulkan/vulkan-renderer.hpp
         src/renderer/shaders/basic.frag src/renderer/shaders/basic.vert
         src/renderer/shaders/shader.frag src/renderer/shaders/shader.vert

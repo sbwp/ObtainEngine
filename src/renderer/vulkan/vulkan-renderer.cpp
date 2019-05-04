@@ -3,6 +3,12 @@
 #include <vector>
 #include <iostream>
 
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "instance.hpp"
 #include "validation.hpp"
 #include "device.hpp"
@@ -48,16 +54,14 @@ namespace Obtain::Graphics::Vulkan {
 		sampler = device->createSampler();
 
 		textureImage = std::make_unique<Image>(Image::createTextureImage(device,
-		                                                                 sampler,
 		                                                                 commandPool,
-		                                                                 *graphicsQueue,
 		                                                                 "texture.jpg"));
 
 		vertexBuffer = createAndLoadBuffer(static_cast<vk::DeviceSize>(obj.getBufferSize()),
 		                                   vk::BufferUsageFlagBits::eVertexBuffer, obj.getVertices().data());
 
 		indexBuffer = createAndLoadBuffer(static_cast<vk::DeviceSize>(obj.getIndexBufferSize()),
-		                                   vk::BufferUsageFlagBits::eIndexBuffer, obj.getIndices().data());
+		                                  vk::BufferUsageFlagBits::eIndexBuffer, obj.getIndices().data());
 
 		swapchain = new Swapchain(
 			instance,
@@ -66,7 +70,9 @@ namespace Obtain::Graphics::Vulkan {
 			indices,
 			commandPool,
 			vertexBuffer,
-			indexBuffer
+			indexBuffer,
+			textureImage,
+			sampler
 		);
 
 	}
@@ -151,12 +157,15 @@ namespace Obtain::Graphics::Vulkan {
 			indices,
 			commandPool,
 			vertexBuffer,
-			indexBuffer
+			indexBuffer,
+			textureImage,
+			sampler
 		);
 		resizeOccurred = false;
 	}
 
-	std::unique_ptr<Buffer> VulkanRenderer::createAndLoadBuffer(vk::DeviceSize size, vk::BufferUsageFlags usageFlags, void *data)
+	std::unique_ptr<Buffer> VulkanRenderer::createAndLoadBuffer(vk::DeviceSize size, vk::BufferUsageFlags usageFlags,
+	                                                            void *data)
 	{
 		Buffer stagingBuffer = Buffer(
 			device,
@@ -192,7 +201,11 @@ namespace Obtain::Graphics::Vulkan {
 	{
 		vk::BufferCopy region(srcOffset, dstOffset, size);
 
-		auto action = [&src, &dst, &region](vk::CommandBuffer commandBuffer) {
+		auto action = [
+			&src,
+			&dst,
+			&region
+		](vk::CommandBuffer commandBuffer) {
 			commandBuffer.copyBuffer(
 				*src,
 				*dst,
