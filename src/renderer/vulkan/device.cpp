@@ -44,11 +44,13 @@ namespace Obtain::Graphics::Vulkan {
 		return queueFamilyIndices;
 	}
 
-	vk::Queue *Device::getGraphicsQueue() {
+	vk::Queue *Device::getGraphicsQueue()
+	{
 		return &graphicsQueue;
 	}
 
-	vk::Queue *Device::getPresentQueue() {
+	vk::Queue *Device::getPresentQueue()
+	{
 		return &presentQueue;
 	}
 
@@ -125,7 +127,8 @@ namespace Obtain::Graphics::Vulkan {
 		return device->getSwapchainImagesKHR(*swapchain);
 	}
 
-	std::vector<vk::ImageView> Device::generateSwapchainImageViews(std::vector<vk::Image> &images, vk::Format format)
+	std::vector<vk::ImageView> Device::generateSwapchainImageViews(std::vector<vk::Image> &images,
+	                                                               const vk::Format &format)
 	{
 		std::vector<vk::ImageView> imageViews;
 		imageViews.resize(images.size());
@@ -203,12 +206,59 @@ namespace Obtain::Graphics::Vulkan {
 		return device->createImageUnique(createInfo);
 	}
 
+	vk::UniqueImageView Device::createImageView(vk::UniqueImage &image, const vk::Format &format)
+	{
+		return device->createImageViewUnique(
+			vk::ImageViewCreateInfo(
+				vk::ImageViewCreateFlags(),
+				*image,
+				vk::ImageViewType::e2D,
+				format,
+				vk::ComponentMapping(
+					vk::ComponentSwizzle::eIdentity, // r
+					vk::ComponentSwizzle::eIdentity, // g
+					vk::ComponentSwizzle::eIdentity, // b
+					vk::ComponentSwizzle::eIdentity  // a
+				),
+				vk::ImageSubresourceRange(
+					vk::ImageAspectFlagBits::eColor,
+					0U, // base mip level
+					1U, // level count
+					0U, // base array level
+					1U  // layer count
+				)
+			)
+		);
+	}
+
+	vk::UniqueSampler Device::createSampler()
+	{
+		vk::SamplerCreateInfo createInfo(vk::SamplerCreateFlags(),
+		                                 vk::Filter::eLinear,
+		                                 vk::Filter::eLinear,
+		                                 vk::SamplerMipmapMode::eLinear,
+		                                 vk::SamplerAddressMode::eRepeat,
+		                                 vk::SamplerAddressMode::eRepeat,
+		                                 vk::SamplerAddressMode::eRepeat,
+		                                 0.0f,
+		                                 true,
+		                                 16,
+		                                 false,
+		                                 vk::CompareOp::eAlways,
+		                                 0.0f,
+		                                 0.0f,
+		                                 vk::BorderColor::eIntOpaqueBlack,
+		                                 false);
+		return device->createSamplerUnique(createInfo);
+	}
+
 	vk::MemoryRequirements Device::getImageMemoryRequirements(vk::UniqueImage &image)
 	{
 		return device->getImageMemoryRequirements(*image);
 	}
 
-	void Device::bindImageMemory(vk::UniqueImage &image, vk::UniqueDeviceMemory &memory, uint32_t offset) {
+	void Device::bindImageMemory(vk::UniqueImage &image, vk::UniqueDeviceMemory &memory, uint32_t offset)
+	{
 		device->bindImageMemory(
 			*image,
 			*memory,
@@ -238,7 +288,7 @@ namespace Obtain::Graphics::Vulkan {
 	vk::UniqueDescriptorPool Device::createDescriptorPool(uint32_t size)
 	{
 		vk::DescriptorPoolSize poolSize(vk::DescriptorType::eUniformBuffer,
-		                            size);
+		                                size);
 
 		vk::DescriptorPoolCreateInfo createInfo(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
 		                                        size,
@@ -560,7 +610,8 @@ namespace Obtain::Graphics::Vulkan {
 		device->waitIdle();
 	}
 
-	vk::UniqueBuffer Device::createBuffer(vk::DeviceSize size, const vk::BufferUsageFlags &usageFlags) {
+	vk::UniqueBuffer Device::createBuffer(vk::DeviceSize size, const vk::BufferUsageFlags &usageFlags)
+	{
 		return device->createBufferUnique(vk::BufferCreateInfo(vk::BufferCreateFlags(),
 		                                                       size,
 		                                                       usageFlags,
@@ -597,7 +648,8 @@ namespace Obtain::Graphics::Vulkan {
 		return device->getBufferMemoryRequirements(*buffer);
 	}
 
-	void Device::bindBufferMemory(vk::UniqueBuffer &buffer, vk::UniqueDeviceMemory &memory, uint32_t offset) {
+	void Device::bindBufferMemory(vk::UniqueBuffer &buffer, vk::UniqueDeviceMemory &memory, uint32_t offset)
+	{
 		device->bindBufferMemory(
 			*buffer,
 			*memory,
@@ -723,6 +775,7 @@ namespace Obtain::Graphics::Vulkan {
 		}
 
 		vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
+		deviceFeatures.samplerAnisotropy = true;
 		std::vector<const char *> validationLayers = Validation::getValidationLayers();
 
 		return physicalDevice.createDeviceUnique(
@@ -790,10 +843,14 @@ namespace Obtain::Graphics::Vulkan {
 				.empty();
 		}
 
+		// if (!deviceFeatures.samplerAnisotropy) {
+		// TODO: instead of disqualifying for missing Anistropy below, conditionally use it
+		// 	score -= 200;
+		// }
+
 		// Check for missing features that are complete dealbreakers
 		if (!(deviceFeatures.geometryShader && findQueueFamilies(physicalDeviceCandidate).isComplete() &&
 		      extensionsSupported && swapchainAdequate && deviceFeatures.samplerAnisotropy)) {
-			// TODO: instead of disqualifying for missing Anistropy here, conditionally use it
 			return 0;
 		}
 

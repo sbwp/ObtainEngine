@@ -45,6 +45,14 @@ namespace Obtain::Graphics::Vulkan {
 
 		commandPool = device->createCommandPool();
 
+		sampler = device->createSampler();
+
+		textureImage = std::make_unique<Image>(Image::createTextureImage(device,
+		                                                                 sampler,
+		                                                                 commandPool,
+		                                                                 *graphicsQueue,
+		                                                                 "texture.jpg"));
+
 		vertexBuffer = createAndLoadBuffer(static_cast<vk::DeviceSize>(obj.getBufferSize()),
 		                                   vk::BufferUsageFlagBits::eVertexBuffer, obj.getVertices().data());
 

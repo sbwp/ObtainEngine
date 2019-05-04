@@ -11,6 +11,7 @@
 #include "object.hpp"
 #include "buffer.hpp"
 #include "device.hpp"
+#include "image.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 	class VulkanRenderer : public Renderer {
@@ -47,6 +48,9 @@ namespace Obtain::Graphics::Vulkan {
 
 		Swapchain *swapchain;
 		vk::UniqueCommandPool commandPool;
+
+		std::unique_ptr<Image> textureImage;
+		vk::UniqueSampler sampler;
 
 		std::unique_ptr<Buffer>  vertexBuffer;
 		std::unique_ptr<Buffer>  indexBuffer;
