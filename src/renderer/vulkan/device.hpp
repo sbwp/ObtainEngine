@@ -32,8 +32,10 @@ namespace Obtain::Graphics::Vulkan {
 		uint32_t nextImage(vk::UniqueSwapchainKHR &swapchain, vk::UniqueFence &triggerFence);
 		vk::UniqueImage createImage(const vk::Extent3D &extent, const vk::Format &format,
 		                            const vk::ImageTiling &tiling, const vk::ImageUsageFlags &usageFlags);
-		vk::UniqueImageView createImageView(vk::UniqueImage &image, const vk::Format &format);
+		vk::UniqueImageView createImageView(vk::UniqueImage &image, const vk::Format &format,
+		                                    const vk::ImageAspectFlags &aspectMask);
 		vk::UniqueSampler createSampler();
+		vk::FormatProperties getFormatProperties(const vk::Format &format);
 
 		vk::MemoryRequirements getImageMemoryRequirements(vk::UniqueImage &image);
 		void bindImageMemory(vk::UniqueImage &image, vk::UniqueDeviceMemory &memory, uint32_t offset);
@@ -43,6 +45,8 @@ namespace Obtain::Graphics::Vulkan {
 		std::vector<vk::UniqueDescriptorSet> createDescriptorSets(uint32_t size,
 		                                                          vk::UniqueDescriptorSetLayout &descriptorSetLayout,
 		                                                          vk::UniqueDescriptorPool &descriptorPool,
+		                                                          vk::UniqueSampler &sampler,
+		                                                          vk::UniqueImageView &imageView,
 		                                                          std::vector<std::unique_ptr<Buffer>> &uniformBuffers);
 
 		vk::UniqueSemaphore createSemaphore();
@@ -51,12 +55,13 @@ namespace Obtain::Graphics::Vulkan {
 		void resetFence(vk::UniqueFence &fence);
 
 		vk::UniqueShaderModule createShaderModule(size_t size, void *data);
-		vk::UniqueRenderPass createRenderPass(const vk::Format &format);
+		vk::UniqueRenderPass createRenderPass(const vk::Format &colorFormat, const vk::Format &depthFormat);
 		vk::UniquePipeline createGraphicsPipeline(const vk::Extent2D &extent,
 		                                          vk::UniquePipelineLayout &pipelineLayout,
 		                                          vk::UniqueRenderPass &renderPass,
 		                                          vk::PipelineShaderStageCreateInfo *shaderCreateInfos);
 		std::vector<vk::UniqueFramebuffer> createFramebuffers(std::vector<vk::ImageView> imageViews,
+		                                                      vk::UniqueImageView &depthImageView,
 		                                                      vk::UniqueRenderPass &renderPass,
 		                                                      const vk::Extent2D &extent);
 		std::vector<vk::UniqueCommandBuffer> allocateCommandBuffers(vk::UniqueCommandPool &commandPool,

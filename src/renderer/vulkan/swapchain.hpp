@@ -7,6 +7,7 @@
 #include "queue-family-indices.hpp"
 #include "buffer.hpp"
 #include "device.hpp"
+#include "image.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 	class Swapchain {
@@ -18,7 +19,9 @@ namespace Obtain::Graphics::Vulkan {
 			QueueFamilyIndices indices,
 			vk::UniqueCommandPool &commandPool,
 			std::unique_ptr<Buffer> &vertexBuffer,
-			std::unique_ptr<Buffer> &indexBuffer
+			std::unique_ptr<Buffer> &indexBuffer,
+			std::unique_ptr<Image> &textureImage,
+			vk::UniqueSampler &sampler
 		);
 
 		~Swapchain();
@@ -44,6 +47,7 @@ namespace Obtain::Graphics::Vulkan {
 		std::vector<vk::ImageView> imageViews;
 		vk::Format format;
 		vk::Extent2D extent;
+		std::unique_ptr<Image> depthImage;
 
 		std::vector<vk::UniqueFramebuffer> framebuffers;
 
@@ -68,6 +72,9 @@ namespace Obtain::Graphics::Vulkan {
 		std::array<vk::UniqueSemaphore, MaxFramesInFlight> renderFinished;
 		std::array<vk::UniqueFence, MaxFramesInFlight> outOfFlight;
 		size_t currentFrame = 0;
+
+		std::unique_ptr<Image> &textureImage;
+		vk::UniqueSampler &sampler;
 
 		static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
 			const std::vector<vk::SurfaceFormatKHR> &availableFormats

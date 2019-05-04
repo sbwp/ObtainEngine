@@ -8,7 +8,7 @@
 #include "swapchain-support-details.hpp"
 #include "queue-family-indices.hpp"
 #include "validation.hpp"
-#include "vertex2d.hpp"
+#include "vertex.hpp"
 #include "shader.hpp"
 #include "uniform-buffer-object.hpp"
 #include "buffer.hpp"
@@ -206,7 +206,8 @@ namespace Obtain::Graphics::Vulkan {
 		return device->createImageUnique(createInfo);
 	}
 
-	vk::UniqueImageView Device::createImageView(vk::UniqueImage &image, const vk::Format &format)
+	vk::UniqueImageView Device::createImageView(vk::UniqueImage &image, const vk::Format &format,
+	                                            const vk::ImageAspectFlags &aspectMask)
 	{
 		return device->createImageViewUnique(
 			vk::ImageViewCreateInfo(
@@ -221,7 +222,7 @@ namespace Obtain::Graphics::Vulkan {
 					vk::ComponentSwizzle::eIdentity  // a
 				),
 				vk::ImageSubresourceRange(
-					vk::ImageAspectFlagBits::eColor,
+					aspectMask,
 					0U, // base mip level
 					1U, // level count
 					0U, // base array level
@@ -252,6 +253,11 @@ namespace Obtain::Graphics::Vulkan {
 		return device->createSamplerUnique(createInfo);
 	}
 
+	vk::FormatProperties Device::getFormatProperties(const vk::Format &format)
+	{
+		return physicalDevice.getFormatProperties(format);
+	}
+
 	vk::MemoryRequirements Device::getImageMemoryRequirements(vk::UniqueImage &image)
 	{
 		return device->getImageMemoryRequirements(*image);
@@ -268,32 +274,45 @@ namespace Obtain::Graphics::Vulkan {
 
 	vk::UniqueDescriptorSetLayout Device::createDescriptorSetLayout()
 	{
-		vk::DescriptorSetLayoutBinding layoutInfo(
-			0,
-			vk::DescriptorType::eUniformBuffer,
-			1,
-			vk::ShaderStageFlagBits::eVertex,
-			nullptr
-		);
+		std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {
+			vk::DescriptorSetLayoutBinding(
+				0,
+				vk::DescriptorType::eUniformBuffer,
+				1,
+				vk::ShaderStageFlagBits::eVertex,
+				nullptr
+			),
+			vk::DescriptorSetLayoutBinding(
+				1,
+				vk::DescriptorType::eCombinedImageSampler,
+				1,
+				vk::ShaderStageFlagBits::eFragment,
+				nullptr
+			)
+		};
 
 		return device->createDescriptorSetLayoutUnique(
 			vk::DescriptorSetLayoutCreateInfo(
 				vk::DescriptorSetLayoutCreateFlags(),
-				1,
-				&layoutInfo
+				bindings.size(),
+				bindings.data()
 			)
 		);
 	}
 
 	vk::UniqueDescriptorPool Device::createDescriptorPool(uint32_t size)
 	{
-		vk::DescriptorPoolSize poolSize(vk::DescriptorType::eUniformBuffer,
-		                                size);
+		std::array<vk::DescriptorPoolSize, 2> poolSizes = {
+			vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer,
+			                       size),
+			vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler,
+			                       size)
+		};
 
 		vk::DescriptorPoolCreateInfo createInfo(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
 		                                        size,
-		                                        1,
-		                                        &poolSize);
+		                                        poolSizes.size(),
+		                                        poolSizes.data());
 
 		return device->createDescriptorPoolUnique(createInfo);
 	}
@@ -302,6 +321,8 @@ namespace Obtain::Graphics::Vulkan {
 	std::vector<vk::UniqueDescriptorSet> Device::createDescriptorSets(uint32_t size,
 	                                                                  vk::UniqueDescriptorSetLayout &descriptorSetLayout,
 	                                                                  vk::UniqueDescriptorPool &descriptorPool,
+	                                                                  vk::UniqueSampler &sampler,
+	                                                                  vk::UniqueImageView &imageView,
 	                                                                  std::vector<std::unique_ptr<Buffer>> &uniformBuffers)
 	{
 		std::vector<vk::DescriptorSetLayout> layouts(size, *descriptorSetLayout);
@@ -317,19 +338,27 @@ namespace Obtain::Graphics::Vulkan {
 			                                    0,
 			                                    sizeof(UniformBufferObject));
 
-			vk::WriteDescriptorSet writeOp(*(descriptorSets[i]),
-			                               0,
-			                               0,
-			                               1,
-			                               vk::DescriptorType::eUniformBuffer,
-			                               nullptr,
-			                               &bufferInfo,
-			                               nullptr);
+			vk::DescriptorImageInfo imageInfo(*sampler, *imageView,
+			                                  vk::ImageLayout::eShaderReadOnlyOptimal);
 
-			device->updateDescriptorSets(1,
-			                             &writeOp,
-			                             0,
-			                             nullptr);
+			std::array<vk::WriteDescriptorSet, 2> writeOps = {
+				vk::WriteDescriptorSet(*(descriptorSets[i]),
+				                       0,
+				                       0,
+				                       1,
+				                       vk::DescriptorType::eUniformBuffer,
+				                       nullptr,
+				                       &bufferInfo,
+				                       nullptr),
+				vk::WriteDescriptorSet(*(descriptorSets[i]),
+				                       1,
+				                       0,
+				                       1,
+				                       vk::DescriptorType::eCombinedImageSampler,
+				                       &imageInfo),
+			};
+
+			device->updateDescriptorSets(writeOps, nullptr);
 		}
 		return descriptorSets;
 	}
@@ -389,8 +418,8 @@ namespace Obtain::Graphics::Vulkan {
 	                                                  vk::UniqueRenderPass &renderPass,
 	                                                  vk::PipelineShaderStageCreateInfo *shaderCreateInfos)
 	{
-		auto bindingDescription = Vertex2D::getBindingDescription();
-		auto attributeDescriptions = Vertex2D::getAttributeDescriptions();
+		auto bindingDescription = Vertex::getBindingDescription();
+		auto attributeDescriptions = Vertex::getAttributeDescriptions();
 
 		vk::PipelineVertexInputStateCreateInfo vertexInputStateCreateInfo(
 			vk::PipelineVertexInputStateCreateFlags(),
@@ -482,6 +511,17 @@ namespace Obtain::Graphics::Vulkan {
 			dynamicStates.data()
 		);
 
+		vk::PipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo(vk::PipelineDepthStencilStateCreateFlags(),
+		                                                                    true,
+		                                                                    true,
+		                                                                    vk::CompareOp::eLess,
+		                                                                    false,
+		                                                                    false,
+		                                                                    vk::StencilOpState(),
+		                                                                    vk::StencilOpState(),
+		                                                                    0.0f,
+		                                                                    1.0f);
+
 		return device->createGraphicsPipelineUnique(
 			nullptr,
 			vk::GraphicsPipelineCreateInfo(
@@ -494,7 +534,7 @@ namespace Obtain::Graphics::Vulkan {
 				&viewportStateCreateInfo,
 				&rasterizerCreateInfo,
 				&multisamplingCreateInfo,
-				nullptr,
+				&depthStencilStateCreateInfo,
 				&colorBlendingCreateInfo,
 				nullptr,
 				*pipelineLayout,
@@ -504,23 +544,39 @@ namespace Obtain::Graphics::Vulkan {
 		);
 	}
 
-	vk::UniqueRenderPass Device::createRenderPass(const vk::Format &format)
+	vk::UniqueRenderPass Device::createRenderPass(const vk::Format &colorFormat, const vk::Format &depthFormat)
 	{
-		vk::AttachmentDescription colorAttachment(
-			vk::AttachmentDescriptionFlags(),
-			format,
-			vk::SampleCountFlagBits::e1,
-			vk::AttachmentLoadOp::eClear,
-			vk::AttachmentStoreOp::eStore,
-			vk::AttachmentLoadOp::eDontCare,
-			vk::AttachmentStoreOp::eDontCare,
-			vk::ImageLayout::eUndefined,
-			vk::ImageLayout::ePresentSrcKHR
-		);
+		std::array<vk::AttachmentDescription, 2> attachmentDescriptions = {
+			vk::AttachmentDescription(vk::AttachmentDescriptionFlags(),
+			                          colorFormat,
+			                          vk::SampleCountFlagBits::e1,
+			                          vk::AttachmentLoadOp::eClear,
+			                          vk::AttachmentStoreOp::eStore,
+			                          vk::AttachmentLoadOp::eDontCare,
+			                          vk::AttachmentStoreOp::eDontCare,
+			                          vk::ImageLayout::eUndefined,
+			                          vk::ImageLayout::ePresentSrcKHR
+			),
+			vk::AttachmentDescription(vk::AttachmentDescriptionFlags(),
+			                          depthFormat,
+			                          vk::SampleCountFlagBits::e1,
+			                          vk::AttachmentLoadOp::eClear,
+			                          vk::AttachmentStoreOp::eDontCare,
+			                          vk::AttachmentLoadOp::eDontCare,
+			                          vk::AttachmentStoreOp::eDontCare,
+			                          vk::ImageLayout::eUndefined,
+			                          vk::ImageLayout::eDepthStencilAttachmentOptimal
+			)
+		};
 
 		vk::AttachmentReference colorAttachmentRef(
 			0,
 			vk::ImageLayout::eColorAttachmentOptimal
+		);
+
+		vk::AttachmentReference depthStencilAttachmentRef(
+			1,
+			vk::ImageLayout::eDepthStencilAttachmentOptimal
 		);
 
 		vk::SubpassDescription subpassDescription(
@@ -529,7 +585,9 @@ namespace Obtain::Graphics::Vulkan {
 			0,
 			nullptr,
 			1,
-			&colorAttachmentRef
+			&colorAttachmentRef,
+			nullptr,
+			&depthStencilAttachmentRef
 		);
 
 		vk::SubpassDependency dependency(
@@ -545,8 +603,8 @@ namespace Obtain::Graphics::Vulkan {
 		return device->createRenderPassUnique(
 			vk::RenderPassCreateInfo(
 				vk::RenderPassCreateFlags(),
-				1,
-				&colorAttachment,
+				attachmentDescriptions.size(),
+				attachmentDescriptions.data(),
 				1,
 				&subpassDescription,
 				1,
@@ -556,6 +614,7 @@ namespace Obtain::Graphics::Vulkan {
 	}
 
 	std::vector<vk::UniqueFramebuffer> Device::createFramebuffers(std::vector<vk::ImageView> imageViews,
+	                                                              vk::UniqueImageView &depthImageView,
 	                                                              vk::UniqueRenderPass &renderPass,
 	                                                              const vk::Extent2D &extent)
 	{
@@ -566,12 +625,17 @@ namespace Obtain::Graphics::Vulkan {
 		framebuffers.resize(size);
 
 		for (size_t i = 0; i < size; i++) {
+			std::array<vk::ImageView, 2> attachments = {
+				imageViews[i],
+				*depthImageView
+			};
+
 			framebuffers[i] = device->createFramebufferUnique(
 				vk::FramebufferCreateInfo(
 					vk::FramebufferCreateFlags(),
 					*renderPass,
-					1,
-					&imageViews[i],
+					attachments.size(),
+					attachments.data(),
 					extent.width,
 					extent.height,
 					1
