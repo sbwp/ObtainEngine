@@ -4,6 +4,7 @@
 #include <set>
 #include <map>
 #include <memory>
+#include <iostream>
 
 #include "swapchain-support-details.hpp"
 #include "queue-family-indices.hpp"
@@ -18,8 +19,18 @@ namespace Obtain::Graphics::Vulkan {
 	 ***************** public *****************
 	 ******************************************/
 
-	Device::Device(vk::UniqueInstance &instance, GLFWwindow *window)
+	Device::Device(const std::string &gameTitle,
+	               std::array<uint32_t, 3> gameVersion,
+	               std::array<uint32_t, 3> engineVersion)
+		: gameVersion(gameVersion),
+		  engineVersion(engineVersion),
+		  gameTitle(gameTitle),
+		  resizeOccurred(false)
 	{
+		windowSize = {1600, 900};
+		createWindow();
+		createInstance();
+
 		surface = createSurface(
 			*instance,
 			window
@@ -37,6 +48,16 @@ namespace Obtain::Graphics::Vulkan {
 
 		graphicsQueue = device->getQueue(queueFamilyIndices.graphicsFamily.value(), 0);
 		presentQueue = device->getQueue(queueFamilyIndices.presentFamily.value(), 0);
+	}
+
+	Device::~Device() {
+		instance->destroyDebugUtilsMessengerEXT(
+			debugMessenger,
+			nullptr,
+			loader
+		);
+		glfwDestroyWindow(window);
+		glfwTerminate();
 	}
 
 	QueueFamilyIndices Device::getQueueFamilies()
@@ -743,6 +764,41 @@ namespace Obtain::Graphics::Vulkan {
 		unmapMemory(memory);
 	}
 
+	bool Device::windowOpen() {
+		return !glfwWindowShouldClose(window);
+	}
+
+	std::array<uint32_t, 2> Device::updateWindowSizeOnceVisible()
+	{
+		int width = 0, height = 0;
+		while (width == 0 || height == 0) {
+			glfwGetFramebufferSize(window, &width, &height);
+			glfwWaitEvents();
+		}
+		setWindowSize(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+	}
+
+	std::array<uint32_t, 2> Device::getWindowSize()
+	{
+		return std::array<uint32_t, 2>(windowSize);
+	}
+
+	void Device::setWindowSize(uint32_t width, uint32_t height)
+	{
+		windowSize[0] = width;
+		windowSize[1] = height;
+	}
+
+	void Device::resetResizeFlag()
+	{
+		resizeOccurred = false;
+	}
+
+	bool Device::getResizeFlag() {
+		return resizeOccurred;
+	}
+
+
 	/******************************************
 	 ***************** private *****************
 	 ******************************************/
@@ -936,5 +992,124 @@ namespace Obtain::Graphics::Vulkan {
 		}
 
 		return requiredExtensions.empty();
+	}
+
+	/******************************************
+	 ***************** private *****************
+	 ******************************************/
+	bool Device::checkForSupportedExtensions(std::vector<const char *> requiredExtensions)
+	{
+		std::vector<vk::ExtensionProperties> extensions = vk::enumerateInstanceExtensionProperties();
+
+		// Print all available extensions
+		std::cout << "available extensions:" << std::endl;
+		for (const auto &extension : extensions) {
+			std::cout << "\t" << extension.extensionName << std::endl;
+		}
+
+		// Check each required extension for availability
+		for (const auto &requiredExtension : requiredExtensions) {
+			bool found = false;
+			for (const auto &extension : extensions) {
+				if (strcmp(
+					extension.extensionName,
+					requiredExtension
+				) == 0) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				std::cerr << "Required Extension " << requiredExtension << " not found." << std::endl;
+				return false;
+			}
+		}
+		return true;
+	}
+
+	std::vector<const char *> Device::getRequiredExtensions(bool useValidationLayers)
+	{
+		uint32_t glfwExtensionCount = 0;
+		const char **glfwExtensions;
+		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+		std::vector<const char *> extensions(
+			glfwExtensions,
+			glfwExtensions + glfwExtensionCount
+		);
+
+		if (useValidationLayers) {
+			extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+		}
+
+		return extensions;
+	}
+
+	void Device::createInstance()
+	{
+		vk::ApplicationInfo appInfo(
+			gameTitle.c_str(),
+			VK_MAKE_VERSION(gameVersion[0],
+			                gameVersion[1],
+			                gameVersion[2]),
+			"Obtain Engine",
+			VK_MAKE_VERSION(engineVersion[0],
+			                engineVersion[1],
+			                engineVersion[2]), // engine gameVersion (replace with not constant)
+			VK_API_VERSION_1_1
+		);
+
+		bool useValidationLayers = Validation::useValidation();
+		std::vector<const char *> requiredExtensions = getRequiredExtensions(useValidationLayers);
+		if (!checkForSupportedExtensions(requiredExtensions)) {
+			throw std::runtime_error("Required Extensions not supported");
+		}
+
+		instance = vk::createInstanceUnique(
+			vk::InstanceCreateInfo(
+				vk::InstanceCreateFlags(),
+				&appInfo,
+				useValidationLayers ? static_cast<uint32_t>(Validation::validationLayers.size()) : 0U,
+				useValidationLayers ? Validation::validationLayers.data() : nullptr,
+				static_cast<uint32_t>(requiredExtensions.size()),
+				requiredExtensions.data()
+			)
+		);
+
+		loader.init(*instance);
+
+		debugMessenger = Validation::createDebugMessenger(
+			instance,
+			loader
+		);
+	}
+
+	void framebufferResizeCallback(GLFWwindow *window, int width, int height)
+	{
+		auto p_resizeOccurred = reinterpret_cast<bool *>(glfwGetWindowUserPointer(window));
+		*p_resizeOccurred = true;
+	}
+
+	void Device::createWindow()
+	{
+		glfwInit();
+		glfwWindowHint(
+			GLFW_CLIENT_API,
+			GLFW_NO_API
+		); // Don't create OpenGL context
+		glfwWindowHint(
+			GLFW_RESIZABLE,
+			true
+		); // Temp: make window not resizable
+		window = glfwCreateWindow(
+			windowSize[0],
+			windowSize[1],
+			gameTitle.c_str(),
+			nullptr,
+			nullptr
+		);
+		glfwSetWindowUserPointer(window, &resizeOccurred);
+
+		glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 	}
 }

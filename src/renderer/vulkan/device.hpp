@@ -14,7 +14,11 @@ namespace Obtain::Graphics::Vulkan {
 
 	class Device {
 	public:
-		Device(vk::UniqueInstance &instance, GLFWwindow *window);
+		Device(const std::string &gameTitle,
+		       std::array<uint32_t, 3> gameVersion,
+		       std::array<uint32_t, 3> engineVersion);
+
+		~Device();
 
 		QueueFamilyIndices getQueueFamilies();
 		vk::Queue *getGraphicsQueue();
@@ -82,10 +86,30 @@ namespace Obtain::Graphics::Vulkan {
 		void *mapMemory(vk::UniqueDeviceMemory &memory, uint32_t offset, vk::DeviceSize size);
 		void unmapMemory(vk::UniqueDeviceMemory &memory);
 		void setMemory(vk::UniqueDeviceMemory &memory, uint32_t offset, vk::DeviceSize size, void *src);
+
+		bool windowOpen();
+		std::array<uint32_t, 2> updateWindowSizeOnceVisible();
+		std::array<uint32_t, 2> getWindowSize();
+		void setWindowSize(uint32_t width, uint32_t height);
+		void resetResizeFlag();
+		bool getResizeFlag();
 	private:
+		vk::UniqueInstance instance;
+		GLFWwindow *window;
+		bool resizeOccurred;
+
+		std::array<u_int32_t, 2> windowSize;
+
 		vk::PhysicalDevice physicalDevice;
 		vk::UniqueSurfaceKHR surface;
 		vk::UniqueDevice device;
+
+		std::string gameTitle;
+		std::array<uint32_t, 3> gameVersion;
+		std::array<uint32_t, 3> engineVersion;
+
+		vk::DispatchLoaderDynamic loader;
+		vk::DebugUtilsMessengerEXT debugMessenger;
 
 		vk::Queue graphicsQueue;
 		vk::Queue presentQueue;
@@ -110,6 +134,14 @@ namespace Obtain::Graphics::Vulkan {
 		uint32_t ratePhysicalDeviceSuitability(const vk::PhysicalDevice &physicalDeviceCandidate);
 
 		static bool checkDeviceExtensionSupport(const vk::PhysicalDevice &physicalDeviceCandidate);
+
+		static bool checkForSupportedExtensions(std::vector<const char *> requiredExtensions);
+
+		static std::vector<const char *> getRequiredExtensions(bool useValidationLayers);
+
+		void createInstance();
+
+		void createWindow();
 
 	};
 }

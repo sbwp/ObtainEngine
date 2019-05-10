@@ -13,7 +13,7 @@
 namespace Obtain::Graphics::Vulkan {
 	class Command {
 	public:
-		static void runSingleTime(std::unique_ptr<Device> &device, vk::UniqueCommandPool &pool,
+		static void runSingleTime(Device *device, vk::UniqueCommandPool &pool,
 		                          const vk::Queue &graphicsQueue, std::function<void(vk::CommandBuffer)> action);
 	};
 }

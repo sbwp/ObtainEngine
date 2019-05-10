@@ -1,5 +1,6 @@
 #include "swapchain.hpp"
 
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_RADIANS
 
 #include <glm/glm.hpp>
@@ -18,8 +19,7 @@ namespace Obtain::Graphics::Vulkan {
 	 ***************** public *****************
 	 ******************************************/
 	Swapchain::Swapchain(
-		vk::UniqueInstance &instance,
-		std::unique_ptr<Device> &device,
+		Device *device,
 		std::array<uint32_t, 2> windowSize,
 		QueueFamilyIndices indices,
 		vk::UniqueCommandPool &commandPool,
@@ -29,7 +29,7 @@ namespace Obtain::Graphics::Vulkan {
 		vk::UniqueSampler &sampler
 	)
 		:
-		instance(instance), device(device), commandPool(commandPool), vertexBuffer(vertexBuffer),
+		device(device), commandPool(commandPool), vertexBuffer(vertexBuffer),
 		indexBuffer(indexBuffer), textureImage(textureImage), sampler(sampler)
 	{
 		auto swapchainSupport = device->querySwapchainSupport();
@@ -45,8 +45,7 @@ namespace Obtain::Graphics::Vulkan {
 		swapchain = device->createSwapchain(surfaceFormat, extent, presentMode);
 		images = device->getSwapchainImages(swapchain);
 		imageViews = device->generateSwapchainImageViews(images, format);
-		depthImage = std::make_unique<Image>(Image::createDepthImage(device, extent,
-		                                                             commandPool));
+		depthImage = Image::createDepthImage(device, extent, commandPool);
 		renderPass = device->createRenderPass(format, depthImage->getFormat());
 		descriptorSetLayout = device->createDescriptorSetLayout();
 		pipelineLayout = device->createPipelineLayout(descriptorSetLayout);

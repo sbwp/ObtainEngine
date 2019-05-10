@@ -10,7 +10,7 @@
 namespace Obtain::Graphics::Vulkan {
 	class Shader {
 	public:
-		Shader(std::unique_ptr<Device> &device, const std::string &filename, const vk::ShaderStageFlagBits &pipelineStage);
+		Shader(Device *device, const std::string &filename, const vk::ShaderStageFlagBits &pipelineStage);
 
 		const vk::PipelineShaderStageCreateInfo getCreateInfo();
 
@@ -21,7 +21,7 @@ namespace Obtain::Graphics::Vulkan {
 		vk::ShaderStageFlagBits stage;
 		vk::UniqueShaderModule module;
 		vk::PipelineShaderStageCreateInfo createInfo;
-		std::unique_ptr<Device> &device;
+		Device *device;
 
 		static std::vector<char> readFile(const std::string &filename);
 	};

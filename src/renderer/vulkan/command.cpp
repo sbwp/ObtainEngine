@@ -5,7 +5,7 @@
 #include "command.hpp"
 
 namespace Obtain::Graphics::Vulkan {
-	void Command::runSingleTime(std::unique_ptr<Device> &device, vk::UniqueCommandPool &pool,
+	void Command::runSingleTime(Device *device, vk::UniqueCommandPool &pool,
 	                            const vk::Queue &graphicsQueue, std::function<void(vk::CommandBuffer)> action)
 	{
 		std::vector<vk::UniqueCommandBuffer> allocatedCommandBuffers =

@@ -12,7 +12,7 @@
 namespace Obtain::Graphics::Vulkan {
 	class Buffer {
 	public:
-		Buffer(std::unique_ptr<Device> &device, vk::DeviceSize size, const vk::BufferUsageFlags &usageFlags,
+		Buffer(Device *device, vk::DeviceSize size, const vk::BufferUsageFlags &usageFlags,
 		       const vk::MemoryPropertyFlags &propertyFlags);
 
 		void load(vk::DeviceSize internalOffset, void *source, size_t size);
@@ -32,7 +32,7 @@ namespace Obtain::Graphics::Vulkan {
 		vk::UniqueDeviceMemory memory;
 		vk::DeviceSize offset;
 
-		std::unique_ptr<Device> &device;
+		Device *device;
 	};
 }
 

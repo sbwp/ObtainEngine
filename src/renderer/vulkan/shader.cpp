@@ -6,7 +6,7 @@
 #include "shader.hpp"
 
 namespace Obtain::Graphics::Vulkan {
-	Shader::Shader(std::unique_ptr<Device> &device, const std::string &filename, const vk::ShaderStageFlagBits &pipelineStage)
+	Shader::Shader(Device *device, const std::string &filename, const vk::ShaderStageFlagBits &pipelineStage)
 		: device(device), stage(pipelineStage), code(readFile(filename))
 	{
 		try {
