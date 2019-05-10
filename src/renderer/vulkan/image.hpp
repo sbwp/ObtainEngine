@@ -11,15 +11,21 @@
 namespace Obtain::Graphics::Vulkan {
 	class Image {
 	public:
-		Image(std::unique_ptr<Device> &device, uint32_t width, uint32_t height,
+		Image(Device *device, uint32_t width, uint32_t height,
 		      vk::Format format, vk::ImageTiling tiling, const vk::ImageAspectFlags &aspectMask,
 		      const vk::ImageUsageFlags &usageFlags, const vk::MemoryPropertyFlags &propertyFlags);
 
-		static Image createTextureImage(std::unique_ptr<Device> &device, vk::UniqueCommandPool &pool,
-		                                const std::string &file);
+		static std::unique_ptr<Image> unique(Device *device, uint32_t width, uint32_t height,
+		                                     vk::Format format, vk::ImageTiling tiling,
+		                                     const vk::ImageAspectFlags &aspectMask,
+		                                     const vk::ImageUsageFlags &usageFlags,
+		                                     const vk::MemoryPropertyFlags &propertyFlags);
 
-		static Image createDepthImage(std::unique_ptr<Device> &device, const vk::Extent2D &extent,
-		                              vk::UniqueCommandPool &pool);
+		static std::unique_ptr<Image> createTextureImage(Device *device, vk::UniqueCommandPool &pool,
+		                                                 const std::string &file);
+
+		static std::unique_ptr<Image> createDepthImage(Device *device, const vk::Extent2D &extent,
+		                                               vk::UniqueCommandPool &pool);
 
 		vk::UniqueImageView &getView();
 
@@ -33,7 +39,7 @@ namespace Obtain::Graphics::Vulkan {
 
 		vk::Format &getFormat();
 	private:
-		std::unique_ptr<Device> &device;
+		Device *device;
 		vk::UniqueImage image;
 		vk::UniqueDeviceMemory memory;
 		vk::UniqueImageView view;
@@ -43,7 +49,7 @@ namespace Obtain::Graphics::Vulkan {
 		static const vk::PipelineStageFlags pipelineStageForLayout(const vk::ImageLayout &layout);
 		static const vk::ImageAspectFlags aspectMaskForLayout(const vk::ImageLayout &layout);
 
-		static const vk::Format findSupportedFormat(std::unique_ptr<Device> &device,
+		static const vk::Format findSupportedFormat(Device *device,
 		                                            const std::vector<vk::Format> &candidates, vk::ImageTiling tiling,
 		                                            vk::FormatFeatureFlags features);
 	};

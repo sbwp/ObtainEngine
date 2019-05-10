@@ -13,8 +13,7 @@ namespace Obtain::Graphics::Vulkan {
 	class Swapchain {
 	public:
 		Swapchain(
-			vk::UniqueInstance &instance,
-			std::unique_ptr<Device> &device,
+			Device *device,
 			std::array<uint32_t, 2> windowSize,
 			QueueFamilyIndices indices,
 			vk::UniqueCommandPool &commandPool,
@@ -51,8 +50,7 @@ namespace Obtain::Graphics::Vulkan {
 
 		std::vector<vk::UniqueFramebuffer> framebuffers;
 
-		vk::UniqueInstance &instance;
-		std::unique_ptr<Device> &device;
+		Device *device;
 
 		vk::UniquePipelineLayout pipelineLayout;
 		vk::UniqueDescriptorSetLayout descriptorSetLayout;

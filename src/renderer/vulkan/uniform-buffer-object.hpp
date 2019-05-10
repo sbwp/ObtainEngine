@@ -1,6 +1,7 @@
 #ifndef UNIFORM_BUFFER_OBJECT_HPP
 #define UNIFORM_BUFFER_OBJECT_HPP
 
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 
 namespace Obtain::Graphics::Vulkan {

@@ -15,7 +15,7 @@
 #define TEXTURE_LOCATION "assets/textures/"
 
 namespace Obtain::Graphics::Vulkan {
-	Image::Image(std::unique_ptr<Device> &device, uint32_t width, uint32_t height,
+	Image::Image(Device *device, uint32_t width, uint32_t height,
 	             vk::Format format, vk::ImageTiling tiling, const vk::ImageAspectFlags &aspectMask,
 	             const vk::ImageUsageFlags &usageFlags, const vk::MemoryPropertyFlags &propertyFlags)
 		: device(device), format(format)
@@ -31,8 +31,18 @@ namespace Obtain::Graphics::Vulkan {
 		view = device->createImageView(image, format, aspectMask);
 	}
 
-	Image Image::createTextureImage(std::unique_ptr<Device> &device, vk::UniqueCommandPool &pool,
-	                                const std::string &file)
+	std::unique_ptr<Image> Image::unique(Device *device, uint32_t width, uint32_t height,
+	                                     vk::Format format, vk::ImageTiling tiling,
+	                                     const vk::ImageAspectFlags &aspectMask,
+	                                     const vk::ImageUsageFlags &usageFlags,
+	                                     const vk::MemoryPropertyFlags &propertyFlags)
+	{
+		return std::make_unique<Image>(Image(device, width, height, format, tiling,
+		                              aspectMask, usageFlags, propertyFlags));
+	}
+
+	std::unique_ptr<Image> Image::createTextureImage(Device *device, vk::UniqueCommandPool &pool,
+	                                                 const std::string &file)
 	{
 		std::string filePath = TEXTURE_LOCATION + file;
 		int width, height, channels;
@@ -58,7 +68,7 @@ namespace Obtain::Graphics::Vulkan {
 
 		stbi_image_free(pixels);
 
-		auto image = Image(device,
+		auto image = Image::unique(device,
 		                   width,
 		                   height,
 		                   vk::Format::eR8G8B8A8Unorm,
@@ -67,19 +77,19 @@ namespace Obtain::Graphics::Vulkan {
 		                   vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
 		                   vk::MemoryPropertyFlagBits::eDeviceLocal);
 
-		image.transitionLayout(pool, *device->getGraphicsQueue(),
+		image->transitionLayout(pool, *device->getGraphicsQueue(),
 		                       vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
 
-		image.copyFromBuffer(pool, *device->getGraphicsQueue(), stagingBuffer,
+		image->copyFromBuffer(pool, *device->getGraphicsQueue(), stagingBuffer,
 		                     static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 
-		image.transitionLayout(pool, *device->getGraphicsQueue(),
+		image->transitionLayout(pool, *device->getGraphicsQueue(),
 		                       vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
 
 		return image;
 	}
 
-	Image Image::createDepthImage(std::unique_ptr<Device> &device, const vk::Extent2D &extent,
+	std::unique_ptr<Image> Image::createDepthImage(Device *device, const vk::Extent2D &extent,
 	                              vk::UniqueCommandPool &pool)
 	{
 		vk::DeviceSize width = extent.width, height = extent.height;
@@ -91,7 +101,7 @@ namespace Obtain::Graphics::Vulkan {
 		                                  vk::ImageTiling::eOptimal,
 		                                  vk::FormatFeatureFlagBits::eDepthStencilAttachment);
 
-		auto image = Image(device,
+		auto image = Image::unique(device,
 		                   width, height,
 		                   format,
 		                   vk::ImageTiling::eOptimal,
@@ -99,7 +109,7 @@ namespace Obtain::Graphics::Vulkan {
 		                   vk::ImageUsageFlagBits::eDepthStencilAttachment,
 		                   vk::MemoryPropertyFlagBits::eDeviceLocal);
 
-		image.transitionLayout(pool, *device->getGraphicsQueue(),
+		image->transitionLayout(pool, *device->getGraphicsQueue(),
 		                       vk::ImageLayout::eUndefined,
 		                       vk::ImageLayout::eDepthStencilAttachmentOptimal);
 		return image;
@@ -115,7 +125,9 @@ namespace Obtain::Graphics::Vulkan {
 		const vk::ImageLayout &oldLayout, const vk::ImageLayout &newLayout)
 	{
 
-		auto action = [&oldLayout, &newLayout, this](vk::CommandBuffer commandBuffer) {
+		auto action = [&oldLayout,
+		               &newLayout,
+		               this](vk::CommandBuffer commandBuffer) {
 			vk::ImageMemoryBarrier barrier(accessMaskForLayout(oldLayout),
 			                               accessMaskForLayout(newLayout),
 			                               oldLayout,
@@ -180,7 +192,7 @@ namespace Obtain::Graphics::Vulkan {
 				return vk::AccessFlagBits::eShaderRead;
 			case vk::ImageLayout::eDepthStencilAttachmentOptimal:
 				return vk::AccessFlagBits::eDepthStencilAttachmentRead |
-					vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+				       vk::AccessFlagBits::eDepthStencilAttachmentWrite;
 			default:
 				throw std::invalid_argument("unsupported image layout");
 		}
@@ -212,7 +224,7 @@ namespace Obtain::Graphics::Vulkan {
 		}
 	}
 
-	const vk::Format Image::findSupportedFormat(std::unique_ptr<Device> &device,
+	const vk::Format Image::findSupportedFormat(Device *device,
 	                                            const std::vector<vk::Format> &candidates, vk::ImageTiling tiling,
 	                                            vk::FormatFeatureFlags features)
 	{

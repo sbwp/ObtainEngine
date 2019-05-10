@@ -17,7 +17,7 @@ namespace Obtain::Graphics::Vulkan {
 	class VulkanRenderer : public Renderer {
 	public:
 		VulkanRenderer(
-			std::string gameTitle,
+			const std::string &gameTitle,
 			std::array<uint32_t, 3> gameVersion,
 			std::array<uint32_t, 3> engineVersion
 		);
@@ -27,21 +27,11 @@ namespace Obtain::Graphics::Vulkan {
 		void run();
 
 	private:
-		std::string gameTitle;
-		std::array<uint32_t, 3> gameVersion;
-		std::array<uint32_t, 3> engineVersion;
-		std::array<u_int32_t, 2> windowSize;
-		bool resizeOccurred;
-		Object obj = Object(); // TODO: Replace with actual vertices
+		std::unique_ptr<Object> obj;
 
-		GLFWwindow *window;
-		vk::UniqueInstance instance;
 		QueueFamilyIndices indices;
 
-		vk::DispatchLoaderDynamic loader;
-		vk::DebugUtilsMessengerEXT debugMessenger;
-
-		std::unique_ptr<Device> device;
+		Device *device;
 
 		vk::Queue *graphicsQueue;
 		vk::Queue *presentationQueue;
@@ -49,13 +39,10 @@ namespace Obtain::Graphics::Vulkan {
 		Swapchain *swapchain;
 		vk::UniqueCommandPool commandPool;
 
-		std::unique_ptr<Image> textureImage;
 		vk::UniqueSampler sampler;
 
 		std::unique_ptr<Buffer>  vertexBuffer;
 		std::unique_ptr<Buffer>  indexBuffer;
-
-		void initWindow();
 
 		void drawFrame();
 

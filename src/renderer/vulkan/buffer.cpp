@@ -6,7 +6,7 @@
 #include "command.hpp"
 
 namespace Obtain::Graphics::Vulkan {
-	Buffer::Buffer(std::unique_ptr<Device> &device, vk::DeviceSize size, const vk::BufferUsageFlags &usageFlags,
+	Buffer::Buffer(Device *device, vk::DeviceSize size, const vk::BufferUsageFlags &usageFlags,
 	               const vk::MemoryPropertyFlags &propertyFlags)
 		: device(device), size(size)
 	{
