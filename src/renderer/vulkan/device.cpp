@@ -253,7 +253,7 @@ namespace Obtain::Graphics::Vulkan {
 		);
 	}
 
-	vk::UniqueSampler Device::createSampler()
+	vk::UniqueSampler Device::createSampler(float mipLevels)
 	{
 		vk::SamplerCreateInfo createInfo(vk::SamplerCreateFlags(),
 		                                 vk::Filter::eLinear,
@@ -268,7 +268,7 @@ namespace Obtain::Graphics::Vulkan {
 		                                 false,
 		                                 vk::CompareOp::eAlways,
 		                                 0.0f,
-		                                 0.0f,
+		                                 mipLevels,
 		                                 vk::BorderColor::eIntOpaqueBlack,
 		                                 false);
 		return device->createSamplerUnique(createInfo);

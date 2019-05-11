@@ -38,7 +38,7 @@ namespace Obtain::Graphics::Vulkan {
 		                            const vk::ImageTiling &tiling, const vk::ImageUsageFlags &usageFlags);
 		vk::UniqueImageView createImageView(vk::UniqueImage &image, const vk::Format &format, uint32_t mipLevels,
 		                                    const vk::ImageAspectFlags &aspectMask);
-		vk::UniqueSampler createSampler();
+		vk::UniqueSampler createSampler(float mipLevels);
 		vk::FormatProperties getFormatProperties(const vk::Format &format);
 
 		vk::MemoryRequirements getImageMemoryRequirements(vk::UniqueImage &image);
