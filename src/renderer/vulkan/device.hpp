@@ -93,6 +93,8 @@ namespace Obtain::Graphics::Vulkan {
 		void setWindowSize(uint32_t width, uint32_t height);
 		void resetResizeFlag();
 		bool getResizeFlag();
+
+		bool hasOptimalTilingFeature(const vk::Format &format, const vk::FormatFeatureFlags &feature);
 	private:
 		vk::UniqueInstance instance;
 		GLFWwindow *window;
