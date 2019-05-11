@@ -37,6 +37,8 @@ namespace Obtain::Graphics::Vulkan {
 
 		bool hasStencilComponent();
 
+		vk::UniqueSampler createSampler();
+
 		vk::Format &getFormat();
 	private:
 		Device *device;

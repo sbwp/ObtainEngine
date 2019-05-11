@@ -33,9 +33,9 @@ namespace Obtain::Graphics::Vulkan {
 
 		commandPool = device->createCommandPool();
 
-		sampler = device->createSampler();
-
 		obj = Object::unique(device, commandPool, "chalet.obj", "chalet.jpg");
+
+		sampler = obj->getTextureImage()->createSampler();
 
 		vertexBuffer = createAndLoadBuffer(static_cast<vk::DeviceSize>(obj->getBufferSize()),
 		                                   vk::BufferUsageFlagBits::eVertexBuffer, obj->getVertices().data());

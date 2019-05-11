@@ -174,6 +174,11 @@ namespace Obtain::Graphics::Vulkan {
 		return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
 	}
 
+	vk::UniqueSampler Image::createSampler()
+	{
+		return device->createSampler(static_cast<float>(mipLevels));
+	}
+
 	vk::Format &Image::getFormat()
 	{
 		return format;
