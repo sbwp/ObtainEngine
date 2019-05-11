@@ -34,9 +34,9 @@ namespace Obtain::Graphics::Vulkan {
 		void destroyImageViews(std::vector<vk::ImageView> imageViews);
 		uint32_t nextImage(vk::UniqueSwapchainKHR &swapchain, vk::UniqueSemaphore &triggerSemaphore);
 		uint32_t nextImage(vk::UniqueSwapchainKHR &swapchain, vk::UniqueFence &triggerFence);
-		vk::UniqueImage createImage(const vk::Extent3D &extent, const vk::Format &format,
+		vk::UniqueImage createImage(const vk::Extent3D &extent, const vk::Format &format, uint32_t mipLevels,
 		                            const vk::ImageTiling &tiling, const vk::ImageUsageFlags &usageFlags);
-		vk::UniqueImageView createImageView(vk::UniqueImage &image, const vk::Format &format,
+		vk::UniqueImageView createImageView(vk::UniqueImage &image, const vk::Format &format, uint32_t mipLevels,
 		                                    const vk::ImageAspectFlags &aspectMask);
 		vk::UniqueSampler createSampler();
 		vk::FormatProperties getFormatProperties(const vk::Format &format);

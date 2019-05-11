@@ -15,30 +15,29 @@
 #define TEXTURE_LOCATION "assets/textures/"
 
 namespace Obtain::Graphics::Vulkan {
-	Image::Image(Device *device, uint32_t width, uint32_t height,
+	Image::Image(Device *device, uint32_t width, uint32_t height, uint32_t mipLevels,
 	             vk::Format format, vk::ImageTiling tiling, const vk::ImageAspectFlags &aspectMask,
 	             const vk::ImageUsageFlags &usageFlags, const vk::MemoryPropertyFlags &propertyFlags)
-		: device(device), format(format)
+		: device(device), format(format), mipLevels(mipLevels), extent(width, height, 1u)
 	{
-		vk::Extent3D extent(width, height, 1u);
-
-		image = device->createImage(extent, format, tiling, usageFlags);
+		image = device->createImage(extent, format, mipLevels, tiling, usageFlags);
 
 		auto memoryRequirements = device->getImageMemoryRequirements(image);
 		auto memoryType = device->findMemoryType(memoryRequirements.memoryTypeBits, propertyFlags);
 		memory = device->allocateMemory(memoryRequirements.size, memoryType);
 		device->bindImageMemory(image, memory, 0);
-		view = device->createImageView(image, format, aspectMask);
+		view = device->createImageView(image, format, mipLevels, aspectMask);
 	}
 
-	std::unique_ptr<Image> Image::unique(Device *device, uint32_t width, uint32_t height,
+	std::unique_ptr<Image> Image::unique(Device *device, uint32_t width, uint32_t height, uint32_t mipLevels,
 	                                     vk::Format format, vk::ImageTiling tiling,
 	                                     const vk::ImageAspectFlags &aspectMask,
 	                                     const vk::ImageUsageFlags &usageFlags,
 	                                     const vk::MemoryPropertyFlags &propertyFlags)
 	{
-		return std::make_unique<Image>(Image(device, width, height, format, tiling,
-		                              aspectMask, usageFlags, propertyFlags));
+		return std::make_unique<Image>(Image(device, width, height, mipLevels,
+		                                     format, tiling, aspectMask, usageFlags,
+		                                     propertyFlags));
 	}
 
 	std::unique_ptr<Image> Image::createTextureImage(Device *device, vk::UniqueCommandPool &pool,
@@ -68,29 +67,32 @@ namespace Obtain::Graphics::Vulkan {
 
 		stbi_image_free(pixels);
 
+		uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height))) + 1);
+
 		auto image = Image::unique(device,
-		                   width,
-		                   height,
-		                   vk::Format::eR8G8B8A8Unorm,
-		                   vk::ImageTiling::eOptimal,
-		                   vk::ImageAspectFlagBits::eColor,
-		                   vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
-		                   vk::MemoryPropertyFlagBits::eDeviceLocal);
+		                           width,
+		                           height,
+		                           mipLevels,
+		                           vk::Format::eR8G8B8A8Unorm,
+		                           vk::ImageTiling::eOptimal,
+		                           vk::ImageAspectFlagBits::eColor,
+		                           vk::ImageUsageFlagBits::eTransferSrc |
+		                           vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+		                           vk::MemoryPropertyFlagBits::eDeviceLocal);
 
 		image->transitionLayout(pool, *device->getGraphicsQueue(),
-		                       vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+		                        vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
 
 		image->copyFromBuffer(pool, *device->getGraphicsQueue(), stagingBuffer,
-		                     static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+		                      static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 
-		image->transitionLayout(pool, *device->getGraphicsQueue(),
-		                       vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
+		image->generateMipmaps(pool);
 
 		return image;
 	}
 
 	std::unique_ptr<Image> Image::createDepthImage(Device *device, const vk::Extent2D &extent,
-	                              vk::UniqueCommandPool &pool)
+	                                               vk::UniqueCommandPool &pool)
 	{
 		vk::DeviceSize width = extent.width, height = extent.height;
 		auto format = findSupportedFormat(device,
@@ -102,16 +104,16 @@ namespace Obtain::Graphics::Vulkan {
 		                                  vk::FormatFeatureFlagBits::eDepthStencilAttachment);
 
 		auto image = Image::unique(device,
-		                   width, height,
-		                   format,
-		                   vk::ImageTiling::eOptimal,
-		                   vk::ImageAspectFlagBits::eDepth,
-		                   vk::ImageUsageFlagBits::eDepthStencilAttachment,
-		                   vk::MemoryPropertyFlagBits::eDeviceLocal);
+		                           width, height, 1U,
+		                           format,
+		                           vk::ImageTiling::eOptimal,
+		                           vk::ImageAspectFlagBits::eDepth,
+		                           vk::ImageUsageFlagBits::eDepthStencilAttachment,
+		                           vk::MemoryPropertyFlagBits::eDeviceLocal);
 
 		image->transitionLayout(pool, *device->getGraphicsQueue(),
-		                       vk::ImageLayout::eUndefined,
-		                       vk::ImageLayout::eDepthStencilAttachmentOptimal);
+		                        vk::ImageLayout::eUndefined,
+		                        vk::ImageLayout::eDepthStencilAttachmentOptimal);
 		return image;
 	}
 
@@ -138,7 +140,7 @@ namespace Obtain::Graphics::Vulkan {
 			                               vk::ImageSubresourceRange(
 				                               aspectMaskForLayout(newLayout),
 				                               0u,
-				                               1u,
+				                               mipLevels,
 				                               0u,
 				                               1u));
 
@@ -181,6 +183,86 @@ namespace Obtain::Graphics::Vulkan {
 	 ******************* Private ************************
 	 ****************************************************/
 
+	void Image::generateMipmaps(vk::UniqueCommandPool &pool)
+	{
+		vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor,
+		                                           0, 1, 0, 1);
+
+		vk::ImageMemoryBarrier barrier(vk::AccessFlags(),
+		                               vk::AccessFlags(),
+		                               vk::ImageLayout::eUndefined, vk::ImageLayout::eUndefined,
+		                               (VK_QUEUE_FAMILY_IGNORED),
+		                               (VK_QUEUE_FAMILY_IGNORED),
+		                               *image, subresourceRange);
+
+
+		auto action = [&barrier,
+		               this](vk::CommandBuffer commandBuffer) {
+			int32_t width = extent.width;
+			int32_t height = extent.height;
+
+			for (uint32_t i = 1; i < mipLevels; i++) {
+				barrier.subresourceRange.baseMipLevel = i - 1;
+				barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
+				barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
+				barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+				barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+				commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+				                              vk::PipelineStageFlagBits::eTransfer,
+				                              vk::DependencyFlags(), 0,
+				                              nullptr, 0,
+				                              nullptr, 1,
+				                              &barrier);
+
+				vk::ImageSubresourceLayers srcSubresourceLayers(vk::ImageAspectFlagBits::eColor,
+				                                                i - 1, 0, 1);
+				vk::ImageSubresourceLayers dstSubresourceLayers(vk::ImageAspectFlagBits::eColor,
+				                                                i, 0, 1);
+				vk::Offset3D sharedOffset(0, 0, 0);
+				vk::Offset3D srcOffset(width, height, 1);
+				vk::Offset3D dstOffset(width > 1 ? width / 2 : 1, height > 1 ? height / 2 : 1, 1);
+				vk::ImageBlit blit(srcSubresourceLayers, {sharedOffset, srcOffset},
+				                   dstSubresourceLayers, {sharedOffset, dstOffset});
+				commandBuffer.blitImage(*image, vk::ImageLayout::eTransferSrcOptimal,
+				                        *image, vk::ImageLayout::eTransferDstOptimal,
+				                        1, &blit, vk::Filter::eLinear);
+
+				barrier.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
+				barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+				barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+				barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+				commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+				                              vk::PipelineStageFlagBits::eFragmentShader,
+				                              vk::DependencyFlags(), 0,
+				                              nullptr, 0,
+				                              nullptr, 1,
+				                              &barrier);
+
+				if (width > 1) {
+					width /= 2;
+				}
+
+				if (height > 1) {
+					height /= 2;
+				}
+			}
+
+			barrier.subresourceRange.baseMipLevel = mipLevels - 1;
+			barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
+			barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+			barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+			commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+			                              vk::PipelineStageFlagBits::eFragmentShader,
+			                              vk::DependencyFlags(), 0,
+			                              nullptr, 0,
+			                              nullptr, 1,
+			                              &barrier);
+		};
+
+		Command::runSingleTime(device, pool, *device->getGraphicsQueue(), action);
+	}
+
 	const vk::AccessFlags Image::accessMaskForLayout(const vk::ImageLayout &layout)
 	{
 		switch (layout) {
@@ -214,7 +296,7 @@ namespace Obtain::Graphics::Vulkan {
 		}
 	}
 
-	const vk::ImageAspectFlags Image::aspectMaskForLayout(const vk::ImageLayout &layout)
+	vk::ImageAspectFlags Image::aspectMaskForLayout(const vk::ImageLayout &layout)
 	{
 		vk::ImageAspectFlags mask;
 		switch (layout) {

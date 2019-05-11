@@ -207,14 +207,14 @@ namespace Obtain::Graphics::Vulkan {
 		).value;
 	}
 
-	vk::UniqueImage Device::createImage(const vk::Extent3D &extent, const vk::Format &format,
+	vk::UniqueImage Device::createImage(const vk::Extent3D &extent, const vk::Format &format, uint32_t mipLevels,
 	                                    const vk::ImageTiling &tiling, const vk::ImageUsageFlags &usageFlags)
 	{
 		vk::ImageCreateInfo createInfo(vk::ImageCreateFlags(),
 		                               vk::ImageType::e2D,
 		                               format,
 		                               extent,
-		                               1u,
+		                               mipLevels,
 		                               1u,
 		                               vk::SampleCountFlagBits::e1,
 		                               tiling,
@@ -227,7 +227,7 @@ namespace Obtain::Graphics::Vulkan {
 		return device->createImageUnique(createInfo);
 	}
 
-	vk::UniqueImageView Device::createImageView(vk::UniqueImage &image, const vk::Format &format,
+	vk::UniqueImageView Device::createImageView(vk::UniqueImage &image, const vk::Format &format, uint32_t mipLevels,
 	                                            const vk::ImageAspectFlags &aspectMask)
 	{
 		return device->createImageViewUnique(
@@ -245,7 +245,7 @@ namespace Obtain::Graphics::Vulkan {
 				vk::ImageSubresourceRange(
 					aspectMask,
 					0U, // base mip level
-					1U, // level count
+					mipLevels, // level count
 					0U, // base array level
 					1U  // layer count
 				)
