@@ -216,9 +216,14 @@ namespace Obtain::Graphics::Vulkan {
 
 	const vk::ImageAspectFlags Image::aspectMaskForLayout(const vk::ImageLayout &layout)
 	{
+		vk::ImageAspectFlags mask;
 		switch (layout) {
 			case vk::ImageLayout::eDepthStencilAttachmentOptimal:
-				return vk::ImageAspectFlagBits::eDepth;
+				mask = vk::ImageAspectFlagBits::eDepth;
+				if (hasStencilComponent()) {
+					mask |= vk::ImageAspectFlagBits::eStencil;
+				}
+				return mask;
 			default:
 				return vk::ImageAspectFlagBits::eColor;
 		}

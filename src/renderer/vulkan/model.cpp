@@ -27,13 +27,13 @@ namespace Obtain::Graphics::Vulkan {
 			for (const auto& index : shape.mesh.indices) {
 				Vertex vertex = {};
 				vertex.pos = {
-					attributes.vertices[3 * index.vertex_index + 0],
+					attributes.vertices[3 * index.vertex_index],
 					attributes.vertices[3 * index.vertex_index + 1],
 					attributes.vertices[3 * index.vertex_index + 2]
 				};
 				vertex.texCoord = {
-					attributes.vertices[2 * index.texcoord_index + 0],
-					1.0f - attributes.vertices[2 * index.texcoord_index + 1]
+					attributes.texcoords[2 * index.texcoord_index],
+					1.0f - attributes.texcoords[2 * index.texcoord_index + 1]
 				};
 				vertex.color = {1.0f, 1.0f, 1.0f};
 

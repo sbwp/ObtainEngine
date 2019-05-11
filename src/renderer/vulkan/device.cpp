@@ -462,7 +462,7 @@ namespace Obtain::Graphics::Vulkan {
 			(float) extent.width,
 			(float) extent.height,
 			0.0f,
-			0.0f
+			1.0f
 		);
 
 		vk::Rect2D scissor(

@@ -47,7 +47,7 @@ namespace Obtain::Graphics::Vulkan {
 
 		static const vk::AccessFlags accessMaskForLayout(const vk::ImageLayout &layout);
 		static const vk::PipelineStageFlags pipelineStageForLayout(const vk::ImageLayout &layout);
-		static const vk::ImageAspectFlags aspectMaskForLayout(const vk::ImageLayout &layout);
+		const vk::ImageAspectFlags aspectMaskForLayout(const vk::ImageLayout &layout);
 
 		static const vk::Format findSupportedFormat(Device *device,
 		                                            const std::vector<vk::Format> &candidates, vk::ImageTiling tiling,
