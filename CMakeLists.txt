@@ -36,7 +36,6 @@ add_executable(obtain src/main.cpp
         src/renderer/vulkan/validation.cpp src/renderer/vulkan/validation.hpp
         src/renderer/vulkan/vertex.hpp src/renderer/vulkan/vertex.hpp
         src/renderer/vulkan/vulkan-renderer.cpp src/renderer/vulkan/vulkan-renderer.hpp
-        src/renderer/shaders/basic.frag src/renderer/shaders/basic.vert
         src/renderer/shaders/shader.frag src/renderer/shaders/shader.vert
         src/renderer/vulkan/object.cpp src/renderer/vulkan/object.hpp
         src/renderer/vulkan/buffer.cpp src/renderer/vulkan/buffer.hpp
