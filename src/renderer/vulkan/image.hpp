@@ -11,11 +11,11 @@
 namespace Obtain::Graphics::Vulkan {
 	class Image {
 	public:
-		Image(Device *device, uint32_t width, uint32_t height,
+		Image(Device *device, uint32_t width, uint32_t height, uint32_t mipLevels,
 		      vk::Format format, vk::ImageTiling tiling, const vk::ImageAspectFlags &aspectMask,
 		      const vk::ImageUsageFlags &usageFlags, const vk::MemoryPropertyFlags &propertyFlags);
 
-		static std::unique_ptr<Image> unique(Device *device, uint32_t width, uint32_t height,
+		static std::unique_ptr<Image> unique(Device *device, uint32_t width, uint32_t height, uint32_t mipLevels,
 		                                     vk::Format format, vk::ImageTiling tiling,
 		                                     const vk::ImageAspectFlags &aspectMask,
 		                                     const vk::ImageUsageFlags &usageFlags,
@@ -44,10 +44,15 @@ namespace Obtain::Graphics::Vulkan {
 		vk::UniqueDeviceMemory memory;
 		vk::UniqueImageView view;
 		vk::Format format;
+		vk::Extent3D extent;
+
+		uint32_t mipLevels;
+
+		vk::ImageAspectFlags aspectMaskForLayout(const vk::ImageLayout &layout);
+		void generateMipmaps(vk::UniqueCommandPool &pool);
 
 		static const vk::AccessFlags accessMaskForLayout(const vk::ImageLayout &layout);
 		static const vk::PipelineStageFlags pipelineStageForLayout(const vk::ImageLayout &layout);
-		const vk::ImageAspectFlags aspectMaskForLayout(const vk::ImageLayout &layout);
 
 		static const vk::Format findSupportedFormat(Device *device,
 		                                            const std::vector<vk::Format> &candidates, vk::ImageTiling tiling,
