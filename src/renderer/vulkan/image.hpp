@@ -13,18 +13,24 @@ namespace Obtain::Graphics::Vulkan {
 	public:
 		Image(Device *device, uint32_t width, uint32_t height, uint32_t mipLevels,
 		      vk::Format format, vk::ImageTiling tiling, const vk::ImageAspectFlags &aspectMask,
-		      const vk::ImageUsageFlags &usageFlags, const vk::MemoryPropertyFlags &propertyFlags);
+		      const vk::ImageUsageFlags &usageFlags, const vk::MemoryPropertyFlags &propertyFlags,
+		      vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1);
 
 		static std::unique_ptr<Image> unique(Device *device, uint32_t width, uint32_t height, uint32_t mipLevels,
 		                                     vk::Format format, vk::ImageTiling tiling,
 		                                     const vk::ImageAspectFlags &aspectMask,
 		                                     const vk::ImageUsageFlags &usageFlags,
-		                                     const vk::MemoryPropertyFlags &propertyFlags);
+		                                     const vk::MemoryPropertyFlags &propertyFlags,
+		                                     vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1);
 
 		static std::unique_ptr<Image> createTextureImage(Device *device, vk::UniqueCommandPool &pool,
 		                                                 const std::string &file);
 
 		static std::unique_ptr<Image> createDepthImage(Device *device, const vk::Extent2D &extent,
+		                                               vk::UniqueCommandPool &pool);
+
+		static std::unique_ptr<Image> createColorImage(Device *device, const vk::Extent2D &extent,
+		                                               const vk::Format &format,
 		                                               vk::UniqueCommandPool &pool);
 
 		vk::UniqueImageView &getView();

@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <iostream>
+#include <limits>
 
 #include "swapchain-support-details.hpp"
 #include "queue-family-indices.hpp"
@@ -40,6 +41,8 @@ namespace Obtain::Graphics::Vulkan {
 			instance
 		);
 
+		findSampleCount();
+
 		queueFamilyIndices = findQueueFamilies();
 
 		device = createLogicalDevice(
@@ -50,7 +53,8 @@ namespace Obtain::Graphics::Vulkan {
 		presentQueue = device->getQueue(queueFamilyIndices.presentFamily.value(), 0);
 	}
 
-	Device::~Device() {
+	Device::~Device()
+	{
 		instance->destroyDebugUtilsMessengerEXT(
 			debugMessenger,
 			nullptr,
@@ -208,7 +212,8 @@ namespace Obtain::Graphics::Vulkan {
 	}
 
 	vk::UniqueImage Device::createImage(const vk::Extent3D &extent, const vk::Format &format, uint32_t mipLevels,
-	                                    const vk::ImageTiling &tiling, const vk::ImageUsageFlags &usageFlags)
+	                                    const vk::ImageTiling &tiling, const vk::ImageUsageFlags &usageFlags,
+	                                    vk::SampleCountFlagBits sampleCount)
 	{
 		vk::ImageCreateInfo createInfo(vk::ImageCreateFlags(),
 		                               vk::ImageType::e2D,
@@ -216,7 +221,7 @@ namespace Obtain::Graphics::Vulkan {
 		                               extent,
 		                               mipLevels,
 		                               1u,
-		                               vk::SampleCountFlagBits::e1,
+		                               sampleCount,
 		                               tiling,
 		                               usageFlags,
 		                               vk::SharingMode::eExclusive,
@@ -498,7 +503,9 @@ namespace Obtain::Graphics::Vulkan {
 		// temporarily disabled
 		vk::PipelineMultisampleStateCreateInfo multisamplingCreateInfo(
 			vk::PipelineMultisampleStateCreateFlags(),
-			vk::SampleCountFlagBits::e1
+			sampleCount,
+			true,
+			0.2f
 		);
 
 		vk::PipelineColorBlendAttachmentState colorBlendAttachmentState(
@@ -567,26 +574,36 @@ namespace Obtain::Graphics::Vulkan {
 
 	vk::UniqueRenderPass Device::createRenderPass(const vk::Format &colorFormat, const vk::Format &depthFormat)
 	{
-		std::array<vk::AttachmentDescription, 2> attachmentDescriptions = {
+		std::array<vk::AttachmentDescription, 3> attachmentDescriptions = {
 			vk::AttachmentDescription(vk::AttachmentDescriptionFlags(),
 			                          colorFormat,
-			                          vk::SampleCountFlagBits::e1,
+			                          sampleCount,
 			                          vk::AttachmentLoadOp::eClear,
 			                          vk::AttachmentStoreOp::eStore,
 			                          vk::AttachmentLoadOp::eDontCare,
 			                          vk::AttachmentStoreOp::eDontCare,
 			                          vk::ImageLayout::eUndefined,
-			                          vk::ImageLayout::ePresentSrcKHR
+			                          vk::ImageLayout::eColorAttachmentOptimal
 			),
 			vk::AttachmentDescription(vk::AttachmentDescriptionFlags(),
 			                          depthFormat,
-			                          vk::SampleCountFlagBits::e1,
+			                          sampleCount,
 			                          vk::AttachmentLoadOp::eClear,
 			                          vk::AttachmentStoreOp::eDontCare,
 			                          vk::AttachmentLoadOp::eDontCare,
 			                          vk::AttachmentStoreOp::eDontCare,
 			                          vk::ImageLayout::eUndefined,
 			                          vk::ImageLayout::eDepthStencilAttachmentOptimal
+			),
+			vk::AttachmentDescription(vk::AttachmentDescriptionFlags(),
+			                          colorFormat,
+			                          vk::SampleCountFlagBits::e1,
+			                          vk::AttachmentLoadOp::eDontCare,
+			                          vk::AttachmentStoreOp::eStore,
+			                          vk::AttachmentLoadOp::eDontCare,
+			                          vk::AttachmentStoreOp::eDontCare,
+			                          vk::ImageLayout::eUndefined,
+			                          vk::ImageLayout::ePresentSrcKHR
 			)
 		};
 
@@ -600,6 +617,11 @@ namespace Obtain::Graphics::Vulkan {
 			vk::ImageLayout::eDepthStencilAttachmentOptimal
 		);
 
+		vk::AttachmentReference colorAttachmentResolveRef(
+			2,
+			vk::ImageLayout::eColorAttachmentOptimal
+		);
+
 		vk::SubpassDescription subpassDescription(
 			vk::SubpassDescriptionFlags(),
 			vk::PipelineBindPoint::eGraphics,
@@ -607,12 +629,12 @@ namespace Obtain::Graphics::Vulkan {
 			nullptr,
 			1,
 			&colorAttachmentRef,
-			nullptr,
+			&colorAttachmentResolveRef,
 			&depthStencilAttachmentRef
 		);
 
 		vk::SubpassDependency dependency(
-			VK_SUBPASS_EXTERNAL,
+			(VK_SUBPASS_EXTERNAL),
 			0,
 			vk::PipelineStageFlagBits::eColorAttachmentOutput,
 			vk::PipelineStageFlagBits::eColorAttachmentOutput,
@@ -635,6 +657,7 @@ namespace Obtain::Graphics::Vulkan {
 	}
 
 	std::vector<vk::UniqueFramebuffer> Device::createFramebuffers(std::vector<vk::ImageView> imageViews,
+	                                                              vk::UniqueImageView &colorImageView,
 	                                                              vk::UniqueImageView &depthImageView,
 	                                                              vk::UniqueRenderPass &renderPass,
 	                                                              const vk::Extent2D &extent)
@@ -646,9 +669,10 @@ namespace Obtain::Graphics::Vulkan {
 		framebuffers.resize(size);
 
 		for (size_t i = 0; i < size; i++) {
-			std::array<vk::ImageView, 2> attachments = {
-				imageViews[i],
-				*depthImageView
+			std::array<vk::ImageView, 3> attachments = {
+				*colorImageView,
+				*depthImageView,
+				imageViews[i]
 			};
 
 			framebuffers[i] = device->createFramebufferUnique(
@@ -764,7 +788,8 @@ namespace Obtain::Graphics::Vulkan {
 		unmapMemory(memory);
 	}
 
-	bool Device::windowOpen() {
+	bool Device::windowOpen()
+	{
 		return !glfwWindowShouldClose(window);
 	}
 
@@ -804,10 +829,39 @@ namespace Obtain::Graphics::Vulkan {
 		return static_cast<bool>(physicalDevice.getFormatProperties(format).optimalTilingFeatures & feature);
 	}
 
+	vk::SampleCountFlagBits Device::getSampleCount()
+	{
+		return sampleCount;
+	}
+
 
 	/******************************************
 	 ***************** private *****************
 	 ******************************************/
+
+
+
+	void Device::findSampleCount()
+	{
+		auto properties = physicalDevice.getProperties();
+
+		vk::SampleCountFlags counts = min(properties.limits.framebufferColorSampleCounts,
+		                                  properties.limits.framebufferDepthSampleCounts);
+
+		std::array<vk::SampleCountFlagBits, 6> options = {
+			vk::SampleCountFlagBits::e64, vk::SampleCountFlagBits::e32, vk::SampleCountFlagBits::e16,
+			vk::SampleCountFlagBits::e8, vk::SampleCountFlagBits::e4, vk::SampleCountFlagBits::e2
+		};
+
+		for (auto option : options) {
+			if (counts & option) {
+				sampleCount = option;
+				return;
+			}
+		}
+
+		sampleCount = vk::SampleCountFlagBits::e1;
+	}
 
 	QueueFamilyIndices Device::findQueueFamilies()
 	{
@@ -902,6 +956,7 @@ namespace Obtain::Graphics::Vulkan {
 
 		vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
 		deviceFeatures.samplerAnisotropy = true;
+		deviceFeatures.sampleRateShading = true;
 		std::vector<const char *> validationLayers = Validation::getValidationLayers();
 
 		return physicalDevice.createDeviceUnique(
@@ -1117,5 +1172,17 @@ namespace Obtain::Graphics::Vulkan {
 		glfwSetWindowUserPointer(window, &resizeOccurred);
 
 		glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+	}
+
+	vk::SampleCountFlags Device::min(const vk::SampleCountFlags &a, const vk::SampleCountFlags &b)
+	{
+		auto cast_a = static_cast<uint32_t>(a);
+		auto cast_b = static_cast<uint32_t>(b);
+
+		if (cast_a < cast_b) {
+			return a;
+		}
+
+		return b;
 	}
 }

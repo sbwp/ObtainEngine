@@ -47,6 +47,7 @@ namespace Obtain::Graphics::Vulkan {
 		vk::Format format;
 		vk::Extent2D extent;
 		std::unique_ptr<Image> depthImage;
+		std::unique_ptr<Image> colorImage;
 
 		std::vector<vk::UniqueFramebuffer> framebuffers;
 

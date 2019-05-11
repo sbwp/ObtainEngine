@@ -35,7 +35,8 @@ namespace Obtain::Graphics::Vulkan {
 		uint32_t nextImage(vk::UniqueSwapchainKHR &swapchain, vk::UniqueSemaphore &triggerSemaphore);
 		uint32_t nextImage(vk::UniqueSwapchainKHR &swapchain, vk::UniqueFence &triggerFence);
 		vk::UniqueImage createImage(const vk::Extent3D &extent, const vk::Format &format, uint32_t mipLevels,
-		                            const vk::ImageTiling &tiling, const vk::ImageUsageFlags &usageFlags);
+		                            const vk::ImageTiling &tiling, const vk::ImageUsageFlags &usageFlags,
+		                            vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1);
 		vk::UniqueImageView createImageView(vk::UniqueImage &image, const vk::Format &format, uint32_t mipLevels,
 		                                    const vk::ImageAspectFlags &aspectMask);
 		vk::UniqueSampler createSampler(float mipLevels);
@@ -65,6 +66,7 @@ namespace Obtain::Graphics::Vulkan {
 		                                          vk::UniqueRenderPass &renderPass,
 		                                          vk::PipelineShaderStageCreateInfo *shaderCreateInfos);
 		std::vector<vk::UniqueFramebuffer> createFramebuffers(std::vector<vk::ImageView> imageViews,
+		                                                      vk::UniqueImageView &colorImageView,
 		                                                      vk::UniqueImageView &depthImageView,
 		                                                      vk::UniqueRenderPass &renderPass,
 		                                                      const vk::Extent2D &extent);
@@ -95,6 +97,7 @@ namespace Obtain::Graphics::Vulkan {
 		bool getResizeFlag();
 
 		bool hasOptimalTilingFeature(const vk::Format &format, const vk::FormatFeatureFlags &feature);
+		vk::SampleCountFlagBits getSampleCount();
 	private:
 		vk::UniqueInstance instance;
 		GLFWwindow *window;
@@ -117,7 +120,10 @@ namespace Obtain::Graphics::Vulkan {
 		vk::Queue presentQueue;
 
 		QueueFamilyIndices queueFamilyIndices;
+		vk::SampleCountFlagBits sampleCount;
 
+
+		void findSampleCount();
 		QueueFamilyIndices findQueueFamilies();
 		QueueFamilyIndices findQueueFamilies(const vk::PhysicalDevice &physicalDeviceCandidate);
 
@@ -144,6 +150,8 @@ namespace Obtain::Graphics::Vulkan {
 		void createInstance();
 
 		void createWindow();
+
+		static vk::SampleCountFlags min(const vk::SampleCountFlags &a, const vk::SampleCountFlags &b);
 
 	};
 }

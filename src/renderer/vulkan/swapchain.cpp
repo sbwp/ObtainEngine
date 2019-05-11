@@ -29,8 +29,8 @@ namespace Obtain::Graphics::Vulkan {
 		vk::UniqueSampler &sampler
 	)
 		:
-		device(device), commandPool(commandPool), vertexBuffer(vertexBuffer),
-		indexBuffer(indexBuffer), textureImage(textureImage), sampler(sampler)
+		device(device), commandPool(commandPool), vertexBuffer(vertexBuffer), indexBuffer(indexBuffer),
+		textureImage(textureImage), sampler(sampler)
 	{
 		auto swapchainSupport = device->querySwapchainSupport();
 
@@ -45,21 +45,23 @@ namespace Obtain::Graphics::Vulkan {
 		swapchain = device->createSwapchain(surfaceFormat, extent, presentMode);
 		images = device->getSwapchainImages(swapchain);
 		imageViews = device->generateSwapchainImageViews(images, format);
+		colorImage = Image::createColorImage(device, extent, format, commandPool);
 		depthImage = Image::createDepthImage(device, extent, commandPool);
 		renderPass = device->createRenderPass(format, depthImage->getFormat());
 		descriptorSetLayout = device->createDescriptorSetLayout();
 		pipelineLayout = device->createPipelineLayout(descriptorSetLayout);
 		createPipeline();
-		framebuffers = device->createFramebuffers(imageViews, depthImage->getView(),
-		                                          renderPass, extent);
+		framebuffers = device->createFramebuffers(imageViews, colorImage->getView(),
+		                                          depthImage->getView(), renderPass,
+		                                          extent);
 		createUniformBuffers();
 		descriptorPool = device->createDescriptorPool(static_cast<uint32_t>(images.size()));
 		descriptorSets = device->createDescriptorSets(static_cast<uint32_t>(images.size()),
-		                            descriptorSetLayout,
-		                            descriptorPool,
-		                            sampler,
-		                            textureImage->getView(),
-		                            uniformBuffers);
+		                                              descriptorSetLayout,
+		                                              descriptorPool,
+		                                              sampler,
+		                                              textureImage->getView(),
+		                                              uniformBuffers);
 		createCommandBuffers();
 
 		for (size_t i = 0; i < MaxFramesInFlight; i++) {
@@ -200,8 +202,8 @@ namespace Obtain::Graphics::Vulkan {
 	void Swapchain::createCommandBuffers()
 	{
 		commandBuffers = device->allocateCommandBuffers(commandPool,
-		                                               vk::CommandBufferLevel::ePrimary,
-		                                               static_cast<uint32_t>(framebuffers.size()));
+		                                                vk::CommandBufferLevel::ePrimary,
+		                                                static_cast<uint32_t>(framebuffers.size()));
 
 		for (size_t i = 0; i < commandBuffers.size(); i++) {
 			auto &commandBuffer = commandBuffers[i];
@@ -253,7 +255,8 @@ namespace Obtain::Graphics::Vulkan {
 		}
 	}
 
-	void Swapchain::createPipeline() {
+	void Swapchain::createPipeline()
+	{
 		Shader *vertShader = new Shader(
 			device,
 			"assets/shaders/vert.spv",
@@ -270,7 +273,7 @@ namespace Obtain::Graphics::Vulkan {
 			fragShader->getCreateInfo()
 		};
 
-		pipeline = device->createGraphicsPipeline(extent,pipelineLayout, renderPass,
+		pipeline = device->createGraphicsPipeline(extent, pipelineLayout, renderPass,
 		                                          shaderCreateInfos);
 
 		delete (vertShader);
