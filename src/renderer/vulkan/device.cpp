@@ -794,8 +794,14 @@ namespace Obtain::Graphics::Vulkan {
 		resizeOccurred = false;
 	}
 
-	bool Device::getResizeFlag() {
+	bool Device::getResizeFlag()
+	{
 		return resizeOccurred;
+	}
+
+	bool Device::hasOptimalTilingFeature(const vk::Format &format, const vk::FormatFeatureFlags &feature)
+	{
+		return static_cast<bool>(physicalDevice.getFormatProperties(format).optimalTilingFeatures & feature);
 	}
 
 

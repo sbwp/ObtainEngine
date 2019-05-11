@@ -185,6 +185,10 @@ namespace Obtain::Graphics::Vulkan {
 
 	void Image::generateMipmaps(vk::UniqueCommandPool &pool)
 	{
+		if (!device->hasOptimalTilingFeature(format,
+		                                     vk::FormatFeatureFlagBits::eSampledImageFilterLinear)) {
+			throw std::runtime_error("Failed to generate mipmaps: image format does not support linear filter");
+		}
 		vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor,
 		                                           0, 1, 0, 1);
 
