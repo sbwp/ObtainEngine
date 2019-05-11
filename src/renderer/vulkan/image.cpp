@@ -17,10 +17,12 @@
 namespace Obtain::Graphics::Vulkan {
 	Image::Image(Device *device, uint32_t width, uint32_t height, uint32_t mipLevels,
 	             vk::Format format, vk::ImageTiling tiling, const vk::ImageAspectFlags &aspectMask,
-	             const vk::ImageUsageFlags &usageFlags, const vk::MemoryPropertyFlags &propertyFlags)
+	             const vk::ImageUsageFlags &usageFlags, const vk::MemoryPropertyFlags &propertyFlags,
+	             vk::SampleCountFlagBits sampleCount)
 		: device(device), format(format), mipLevels(mipLevels), extent(width, height, 1u)
 	{
-		image = device->createImage(extent, format, mipLevels, tiling, usageFlags);
+		image = device->createImage(extent, format, mipLevels, tiling,
+		                            usageFlags, sampleCount);
 
 		auto memoryRequirements = device->getImageMemoryRequirements(image);
 		auto memoryType = device->findMemoryType(memoryRequirements.memoryTypeBits, propertyFlags);
@@ -33,11 +35,12 @@ namespace Obtain::Graphics::Vulkan {
 	                                     vk::Format format, vk::ImageTiling tiling,
 	                                     const vk::ImageAspectFlags &aspectMask,
 	                                     const vk::ImageUsageFlags &usageFlags,
-	                                     const vk::MemoryPropertyFlags &propertyFlags)
+	                                     const vk::MemoryPropertyFlags &propertyFlags,
+	                                     vk::SampleCountFlagBits sampleCount)
 	{
 		return std::make_unique<Image>(Image(device, width, height, mipLevels,
 		                                     format, tiling, aspectMask, usageFlags,
-		                                     propertyFlags));
+		                                     propertyFlags, sampleCount));
 	}
 
 	std::unique_ptr<Image> Image::createTextureImage(Device *device, vk::UniqueCommandPool &pool,
@@ -109,11 +112,31 @@ namespace Obtain::Graphics::Vulkan {
 		                           vk::ImageTiling::eOptimal,
 		                           vk::ImageAspectFlagBits::eDepth,
 		                           vk::ImageUsageFlagBits::eDepthStencilAttachment,
-		                           vk::MemoryPropertyFlagBits::eDeviceLocal);
+		                           vk::MemoryPropertyFlagBits::eDeviceLocal,
+		                           device->getSampleCount());
 
 		image->transitionLayout(pool, *device->getGraphicsQueue(),
 		                        vk::ImageLayout::eUndefined,
 		                        vk::ImageLayout::eDepthStencilAttachmentOptimal);
+		return image;
+	}
+
+	std::unique_ptr<Image> Image::createColorImage(Device *device, const vk::Extent2D &extent, const vk::Format &format,
+	                                        vk::UniqueCommandPool &pool)
+	{
+		auto image = Image::unique(device,
+		                           extent.width, extent.height, 1U,
+		                           format,
+		                           vk::ImageTiling::eOptimal,
+		                           vk::ImageAspectFlagBits::eColor,
+		                           vk::ImageUsageFlagBits::eTransientAttachment |
+		                           vk::ImageUsageFlagBits::eColorAttachment,
+		                           vk::MemoryPropertyFlagBits::eDeviceLocal,
+		                           device->getSampleCount());
+
+		image->transitionLayout(pool, *device->getGraphicsQueue(),
+		                        vk::ImageLayout::eUndefined,
+		                        vk::ImageLayout::eColorAttachmentOptimal);
 		return image;
 	}
 
@@ -284,6 +307,8 @@ namespace Obtain::Graphics::Vulkan {
 			case vk::ImageLayout::eDepthStencilAttachmentOptimal:
 				return vk::AccessFlagBits::eDepthStencilAttachmentRead |
 				       vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+			case vk::ImageLayout::eColorAttachmentOptimal:
+				return vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite;
 			default:
 				throw std::invalid_argument("unsupported image layout");
 		}
@@ -300,6 +325,8 @@ namespace Obtain::Graphics::Vulkan {
 				return vk::PipelineStageFlagBits::eFragmentShader;
 			case vk::ImageLayout::eDepthStencilAttachmentOptimal:
 				return vk::PipelineStageFlagBits::eEarlyFragmentTests;
+			case vk::ImageLayout::eColorAttachmentOptimal:
+				return vk::PipelineStageFlagBits::eColorAttachmentOutput;
 			default:
 				throw std::invalid_argument("unsupported image layout");
 		}
@@ -307,17 +334,15 @@ namespace Obtain::Graphics::Vulkan {
 
 	vk::ImageAspectFlags Image::aspectMaskForLayout(const vk::ImageLayout &layout)
 	{
-		vk::ImageAspectFlags mask;
-		switch (layout) {
-			case vk::ImageLayout::eDepthStencilAttachmentOptimal:
-				mask = vk::ImageAspectFlagBits::eDepth;
-				if (hasStencilComponent()) {
-					mask |= vk::ImageAspectFlagBits::eStencil;
-				}
-				return mask;
-			default:
-				return vk::ImageAspectFlagBits::eColor;
-		}
+		 if (layout == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
+			 vk::ImageAspectFlags mask = vk::ImageAspectFlagBits::eDepth;
+			 if (hasStencilComponent()) {
+				 mask |= vk::ImageAspectFlagBits::eStencil;
+			 }
+			 return mask;
+		 }
+
+		return vk::ImageAspectFlagBits::eColor;
 	}
 
 	const vk::Format Image::findSupportedFormat(Device *device,
