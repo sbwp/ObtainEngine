@@ -8,7 +8,6 @@
 
 #include "queue-family-indices.hpp"
 #include "swapchain-support-details.hpp"
-#include "allocator.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 	class Buffer; // Forward declaration
@@ -109,7 +108,6 @@ namespace Obtain::Graphics::Vulkan {
 		vk::PhysicalDevice physicalDevice;
 		vk::UniqueSurfaceKHR surface;
 		vk::UniqueDevice device;
-		std::unique_ptr<Allocator> allocator;
 
 		std::string gameTitle;
 		std::array<uint32_t, 3> gameVersion;

@@ -38,16 +38,12 @@ add_executable(obtain src/main.cpp
         src/graphics/vulkan/vulkan-renderer.cpp src/graphics/vulkan/vulkan-renderer.hpp
         src/graphics/shaders/shader.frag src/graphics/shaders/shader.vert
         src/graphics/vulkan/object.cpp src/graphics/vulkan/object.hpp
-        src/graphics/vulkan/object-registry.cpp src/graphics/vulkan/object-registry.hpp
         src/graphics/vulkan/buffer.cpp src/graphics/vulkan/buffer.hpp
         src/utils/time.cpp src/utils/time.hpp
         src/graphics/vulkan/image.cpp src/graphics/vulkan/image.hpp
         src/graphics/vulkan/command.cpp src/graphics/vulkan/command.hpp
         src/graphics/vulkan/model.cpp src/graphics/vulkan/model.hpp
-        src/graphics/vulkan/allocator.cpp src/graphics/vulkan/allocator.hpp
-        src/graphics/vulkan/memory.hpp
-        src/graphics/vulkan/memory-block.cpp src/graphics/vulkan/memory-block.hpp
-        src/graphics/vulkan/memory-type.cpp src/graphics/vulkan/memory-type.hpp)
+        )
 
 
 add_dependencies(obtain shaders)

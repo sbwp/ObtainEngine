@@ -28,7 +28,6 @@ namespace Obtain::Graphics::Vulkan {
 		  gameTitle(gameTitle),
 		  resizeOccurred(false)
 	{
-		allocator = std::make_unique<Allocator>(Allocator(this));
 		windowSize = {1600, 900};
 		createWindow();
 		createInstance();
