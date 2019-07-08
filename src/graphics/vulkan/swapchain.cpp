@@ -236,10 +236,10 @@ namespace Obtain::Graphics::Vulkan {
 
 			commandBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline);
 			vk::Buffer vertexBuffers[] = {*(vertexBuffer->getBuffer())};
-			vk::DeviceSize offsets[] = {0};
+			vk::DeviceSize offsets[] = {vertexBuffer->getOffset()};
 			commandBuffer->bindVertexBuffers(0, 1, vertexBuffers, offsets);
 			commandBuffer->bindIndexBuffer(*(indexBuffer->getBuffer()),
-			                               static_cast<vk::DeviceSize>(0),
+			                               indexBuffer->getOffset(),
 			                               vk::IndexType::eUint32);
 			commandBuffers[i]->bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
 			                                      *pipelineLayout,

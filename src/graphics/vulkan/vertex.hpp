@@ -1,5 +1,5 @@
-#ifndef VERTEX_HPP
-#define VERTEX_HPP
+#ifndef OBTAIN_GRAPHICS_VULKAN_VERTEX_HPP
+#define OBTAIN_GRAPHICS_VULKAN_VERTEX_HPP
 
 #define GLFW_INCLUDE_VULKAN
 
@@ -69,10 +69,10 @@ namespace std {
 		size_t operator()(Obtain::Graphics::Vulkan::Vertex const &vertex) const
 		{
 			return ((hash<glm::vec3>()(vertex.pos) ^
-			         (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
-			       (hash<glm::vec2>()(vertex.texCoord) << 1);
+			         (hash<glm::vec3>()(vertex.color) << 1U)) >> 1U) ^
+			       (hash<glm::vec2>()(vertex.texCoord) << 1U);
 		}
 	};
 }
 
-#endif // VERTEX_HPP
+#endif // OBTAIN_GRAPHICS_VULKAN_VERTEX_HPP

@@ -2,8 +2,8 @@
 // Created by sabrina on 5/2/19.
 //
 
-#ifndef COMMAND_HPP
-#define COMMAND_HPP
+#ifndef OBTAIN_GRAPHICS_VULKAN_COMMAND_HPP
+#define OBTAIN_GRAPHICS_VULKAN_COMMAND_HPP
 
 #include <vulkan/vulkan.hpp>
 #include <functional>
@@ -19,4 +19,4 @@ namespace Obtain::Graphics::Vulkan {
 }
 
 
-#endif // COMMAND_HPP
+#endif // OBTAIN_GRAPHICS_VULKAN_COMMAND_HPP

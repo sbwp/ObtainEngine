@@ -37,7 +37,9 @@ namespace Obtain::Graphics::Vulkan {
 
 		sampler = obj->getTextureImage()->createSampler();
 
-		vertexBuffer = createAndLoadBuffer(static_cast<vk::DeviceSize>(obj->getBufferSize()),
+
+
+		vertexBuffer = createAndLoadBuffer(static_cast<vk::DeviceSize>(obj->getVertexBufferSize()),
 		                                   vk::BufferUsageFlagBits::eVertexBuffer, obj->getVertices().data());
 
 		indexBuffer = createAndLoadBuffer(static_cast<vk::DeviceSize>(obj->getIndexBufferSize()),

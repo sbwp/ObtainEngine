@@ -2,8 +2,8 @@
 // Created by sabrina on 5/2/19.
 //
 
-#ifndef IMAGE_HPP
-#define IMAGE_HPP
+#ifndef OBTAIN_GRAPHICS_VULKAN_IMAGE_HPP
+#define OBTAIN_GRAPHICS_VULKAN_IMAGE_HPP
 
 #include <vulkan/vulkan.hpp>
 #include "device.hpp"
@@ -69,4 +69,4 @@ namespace Obtain::Graphics::Vulkan {
 }
 
 
-#endif // IMAGE_HPP
+#endif // OBTAIN_GRAPHICS_VULKAN_IMAGE_HPP

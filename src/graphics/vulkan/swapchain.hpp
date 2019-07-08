@@ -1,5 +1,5 @@
-#ifndef SWAPCHAIN_HPP
-#define SWAPCHAIN_HPP
+#ifndef OBTAIN_GRAPHICS_VULKAN_SWAPCHAIN_HPP
+#define OBTAIN_GRAPHICS_VULKAN_SWAPCHAIN_HPP
 
 #include <vector>
 #include <vulkan/vulkan.hpp>
@@ -96,4 +96,4 @@ namespace Obtain::Graphics::Vulkan {
 	};
 }
 
-#endif // SWAPCHAIN_HPP
+#endif // OBTAIN_GRAPHICS_VULKAN_SWAPCHAIN_HPP

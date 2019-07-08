@@ -2,8 +2,8 @@
 // Created by sabrina on 5/4/19.
 //
 
-#ifndef OBTAIN_MODEL_HPP
-#define OBTAIN_MODEL_HPP
+#ifndef OBTAIN_GRAPHICS_VULKAN_MODEL_HPP
+#define OBTAIN_GRAPHICS_VULKAN_MODEL_HPP
 
 #include "vertex.hpp"
 
@@ -28,4 +28,4 @@ namespace Obtain::Graphics::Vulkan {
 	};
 }
 
-#endif // OBTAIN_MODEL_HPP
+#endif // OBTAIN_GRAPHICS_VULKAN_MODEL_HPP

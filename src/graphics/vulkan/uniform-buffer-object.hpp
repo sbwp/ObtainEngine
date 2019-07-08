@@ -1,5 +1,5 @@
-#ifndef UNIFORM_BUFFER_OBJECT_HPP
-#define UNIFORM_BUFFER_OBJECT_HPP
+#ifndef OBTAIN_GRAPHICS_VULKAN_UNIFORM_BUFFER_OBJECT_HPP
+#define OBTAIN_GRAPHICS_VULKAN_UNIFORM_BUFFER_OBJECT_HPP
 
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -11,4 +11,4 @@ namespace Obtain::Graphics::Vulkan {
 		alignas(16) glm::mat4 projection;
 	};
 }
-#endif // UNIFORM_BUFFER_OBJECT_HPP
+#endif // OBTAIN_GRAPHICS_VULKAN_UNIFORM_BUFFER_OBJECT_HPP

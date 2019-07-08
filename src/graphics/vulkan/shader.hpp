@@ -1,5 +1,5 @@
-#ifndef SHADER_HPP
-#define SHADER_HPP
+#ifndef OBTAIN_GRAPHICS_VULKAN_SHADER_HPP
+#define OBTAIN_GRAPHICS_VULKAN_SHADER_HPP
 
 #include <string>
 #include <vector>
@@ -27,4 +27,4 @@ namespace Obtain::Graphics::Vulkan {
 	};
 }
 
-#endif // SHADER_HPP
+#endif // OBTAIN_GRAPHICS_VULKAN_SHADER_HPP

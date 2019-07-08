@@ -2,8 +2,8 @@
 // Created by sabrina on 4/22/19.
 //
 
-#ifndef BUFFER_HPP
-#define BUFFER_HPP
+#ifndef OBTAIN_GRAPHICS_VULKAN_BUFFER_HPP
+#define OBTAIN_GRAPHICS_VULKAN_BUFFER_HPP
 
 #include <vulkan/vulkan.hpp>
 
@@ -15,6 +15,9 @@ namespace Obtain::Graphics::Vulkan {
 		Buffer(Device *device, vk::DeviceSize size, const vk::BufferUsageFlags &usageFlags,
 		       const vk::MemoryPropertyFlags &propertyFlags);
 
+		static std::unique_ptr<Buffer> unique(Device *device, vk::DeviceSize size, const vk::BufferUsageFlags &usageFlags,
+		const vk::MemoryPropertyFlags &propertyFlags);
+
 		void load(vk::DeviceSize internalOffset, void *source, size_t size);
 
 		vk::UniqueBuffer &getBuffer();
@@ -23,8 +26,12 @@ namespace Obtain::Graphics::Vulkan {
 
 		vk::DeviceSize getSize();
 
+		vk::DeviceSize getOffset();
+
 		void copyToImage(vk::UniqueCommandPool &commandPool, const vk::Queue &graphicsQueue, vk::UniqueImage &image,
 		                 const vk::BufferImageCopy &region, const vk::ImageSubresourceLayers &subresource);
+
+		void copyToBuffer(vk::UniqueCommandPool &pool, vk::Queue *queue, std::unique_ptr<Buffer> &dst);
 
 	private:
 		vk::DeviceSize size;
@@ -37,4 +44,4 @@ namespace Obtain::Graphics::Vulkan {
 }
 
 
-#endif // BUFFER_HPP
+#endif // OBTAIN_GRAPHICS_VULKAN_BUFFER_HPP

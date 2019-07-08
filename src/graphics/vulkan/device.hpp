@@ -1,5 +1,5 @@
-#ifndef DEVICE_HPP
-#define DEVICE_HPP
+#ifndef OBTAIN_GRAPHICS_VULKAN_DEVICE_HPP
+#define OBTAIN_GRAPHICS_VULKAN_DEVICE_HPP
 
 #define GLFW_INCLUDE_VULKAN
 
@@ -8,6 +8,7 @@
 
 #include "queue-family-indices.hpp"
 #include "swapchain-support-details.hpp"
+#include "allocator.hpp"
 
 namespace Obtain::Graphics::Vulkan {
 	class Buffer; // Forward declaration
@@ -108,6 +109,7 @@ namespace Obtain::Graphics::Vulkan {
 		vk::PhysicalDevice physicalDevice;
 		vk::UniqueSurfaceKHR surface;
 		vk::UniqueDevice device;
+		std::unique_ptr<Allocator> allocator;
 
 		std::string gameTitle;
 		std::array<uint32_t, 3> gameVersion;
@@ -156,4 +158,4 @@ namespace Obtain::Graphics::Vulkan {
 	};
 }
 
-#endif // DEVICE_HPP
+#endif // OBTAIN_GRAPHICS_VULKAN_DEVICE_HPP

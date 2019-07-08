@@ -2,8 +2,8 @@
 // Created by sabrina on 5/2/19.
 //
 
-#ifndef OBTAIN_TIME_HPP
-#define OBTAIN_TIME_HPP
+#ifndef OBTAIN_UTILS_TIME_HPP
+#define OBTAIN_UTILS_TIME_HPP
 
 #include <chrono>
 
@@ -14,4 +14,4 @@ namespace Obtain {
 	};
 }
 
-#endif // OBTAIN_TIME_HPP
+#endif // OBTAIN_UTILS_TIME_HPP

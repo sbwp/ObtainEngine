@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "renderer/vulkan/vulkan-renderer.hpp"
+#include "graphics/vulkan/vulkan-renderer.hpp"
 
 // Temporary constants for testing
 const std::string gameTitle = "The Game 2: Return of the Game";

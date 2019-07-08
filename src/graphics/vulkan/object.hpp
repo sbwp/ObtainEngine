@@ -23,15 +23,28 @@ namespace Obtain::Graphics::Vulkan {
 
 		std::unique_ptr<Image> &getTextureImage();
 
-		uint32_t getBufferSize();
+		vk::DeviceSize getVertexBufferSize();
 
-		uint32_t getIndexBufferSize();
+		vk::DeviceSize getIndexBufferSize();
+
+		vk::DeviceSize getBufferSize();
+
+		vk::DeviceSize getVertexBufferOffset();
+
+		vk::DeviceSize getIndexBufferOffset();
+
+		vk::DeviceSize getBufferOffset();
 
 	private:
+		Device *device;
 		std::unique_ptr<Model> model;
 		std::vector<Vertex> &vertices;
 		std::vector<uint32_t> &indices;
 		std::unique_ptr<Image> textureImage;
+		vk::UniqueCommandPool &commandPool;
+		std::unique_ptr<Buffer> buffer;
+
+		std::unique_ptr<Buffer> createBuffer();
 	};
 }
 

@@ -1,5 +1,5 @@
-#ifndef VALIDATION_HPP
-#define VALIDATION_HPP
+#ifndef OBTAIN_GRAPHICS_VULKAN_VALIDATION_HPP
+#define OBTAIN_GRAPHICS_VULKAN_VALIDATION_HPP
 
 #include <vulkan/vulkan.hpp>
 
@@ -29,4 +29,4 @@ namespace Obtain::Graphics::Vulkan {
 	};
 }
 
-#endif // VALIDATION_HPP
+#endif // OBTAIN_GRAPHICS_VULKAN_VALIDATION_HPP

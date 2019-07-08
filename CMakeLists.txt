@@ -12,14 +12,14 @@ find_package(Vulkan REQUIRED)
 
 add_custom_command(
         OUTPUT build/assets/shaders/frag.spv
-        DEPENDS src/renderer/shaders/shader.frag
+        DEPENDS src/graphics/shaders/shader.frag
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMAND ./compile-shaders.sh
 )
 
 add_custom_command(
         OUTPUT build/assets/shaders/vert.spv
-        DEPENDS src/renderer/shaders/shader.vert
+        DEPENDS src/graphics/shaders/shader.vert
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMAND ./compile-shaders.sh
 )
@@ -27,21 +27,27 @@ add_custom_command(
 add_custom_target(shaders ALL DEPENDS build/assets/shaders/frag.spv build/assets/shaders/vert.spv)
 
 add_executable(obtain src/main.cpp
-        src/renderer/renderer.cpp src/renderer/renderer.hpp
-        src/renderer/vulkan/device.cpp src/renderer/vulkan/device.hpp
-        src/renderer/vulkan/queue-family-indices.hpp
-        src/renderer/vulkan/shader.cpp src/renderer/vulkan/shader.hpp
-        src/renderer/vulkan/swapchain.cpp src/renderer/vulkan/swapchain.hpp
-        src/renderer/vulkan/swapchain-support-details.hpp src/renderer/vulkan/uniform-buffer-object.hpp
-        src/renderer/vulkan/validation.cpp src/renderer/vulkan/validation.hpp
-        src/renderer/vulkan/vertex.hpp src/renderer/vulkan/vertex.hpp
-        src/renderer/vulkan/vulkan-renderer.cpp src/renderer/vulkan/vulkan-renderer.hpp
-        src/renderer/shaders/shader.frag src/renderer/shaders/shader.vert
-        src/renderer/vulkan/object.cpp src/renderer/vulkan/object.hpp
-        src/renderer/vulkan/buffer.cpp src/renderer/vulkan/buffer.hpp
+        src/graphics/renderer.cpp src/graphics/renderer.hpp
+        src/graphics/vulkan/device.cpp src/graphics/vulkan/device.hpp
+        src/graphics/vulkan/queue-family-indices.hpp
+        src/graphics/vulkan/shader.cpp src/graphics/vulkan/shader.hpp
+        src/graphics/vulkan/swapchain.cpp src/graphics/vulkan/swapchain.hpp
+        src/graphics/vulkan/swapchain-support-details.hpp src/graphics/vulkan/uniform-buffer-object.hpp
+        src/graphics/vulkan/validation.cpp src/graphics/vulkan/validation.hpp
+        src/graphics/vulkan/vertex.hpp src/graphics/vulkan/vertex.hpp
+        src/graphics/vulkan/vulkan-renderer.cpp src/graphics/vulkan/vulkan-renderer.hpp
+        src/graphics/shaders/shader.frag src/graphics/shaders/shader.vert
+        src/graphics/vulkan/object.cpp src/graphics/vulkan/object.hpp
+        src/graphics/vulkan/object-registry.cpp src/graphics/vulkan/object-registry.hpp
+        src/graphics/vulkan/buffer.cpp src/graphics/vulkan/buffer.hpp
         src/utils/time.cpp src/utils/time.hpp
-        src/renderer/vulkan/image.cpp src/renderer/vulkan/image.hpp
-        src/renderer/vulkan/command.cpp src/renderer/vulkan/command.hpp src/renderer/vulkan/model.cpp src/renderer/vulkan/model.hpp)
+        src/graphics/vulkan/image.cpp src/graphics/vulkan/image.hpp
+        src/graphics/vulkan/command.cpp src/graphics/vulkan/command.hpp
+        src/graphics/vulkan/model.cpp src/graphics/vulkan/model.hpp
+        src/graphics/vulkan/allocator.cpp src/graphics/vulkan/allocator.hpp
+        src/graphics/vulkan/memory.hpp
+        src/graphics/vulkan/memory-block.cpp src/graphics/vulkan/memory-block.hpp
+        src/graphics/vulkan/memory-type.cpp src/graphics/vulkan/memory-type.hpp)
 
 
 add_dependencies(obtain shaders)
